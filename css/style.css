@@ -176,6 +176,7 @@ h4{font-size:12px;color:var(--mut);margin:10px 0 6px;text-transform:uppercase;le
 .evo-row{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;margin-bottom:5px}
 .held{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow:auto}.held-row{display:grid;grid-template-columns:32px 1fr auto;gap:8px;align-items:center;font-size:12px;background:#111b30;border-radius:8px;padding:5px 7px}
 .pickrow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.pickc{display:flex;flex-direction:column;gap:10px}.pickc .detail{flex:1;border:1px solid #2f4170}
+.pickgift{display:flex;flex-direction:column;gap:4px}.pickgift small{text-transform:uppercase;letter-spacing:.06em;font-size:10px}
 .rtab{width:100%;border-collapse:collapse;margin:6px 0}.rtab td,.rtab th{padding:5px 6px;border-bottom:1px solid #243558;text-align:left}.rtab th{color:var(--mut);font-size:11px;text-transform:uppercase}
 .rtab tr.you td{background:#25314f}.rtab .vs{color:var(--mut);text-align:center;width:24px}.rtab .wn{font-weight:800;color:var(--ok)}.rtab .ls{color:var(--mut)}.rtab .up{color:var(--ok)}.rtab .dn{color:var(--bad)}
 .rtab.big td,.rtab.big th{padding:7px 10px;font-size:15px}

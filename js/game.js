@@ -10,7 +10,7 @@ const XP_CUM = { 2: 0, 3: 2, 4: 6, 5: 14, 6: 30, 7: 56, 8: 94 };
 const MAX_LEVEL = 8;
 const TRADE = { I: 0, II: 2, III: 4, IV: 7, V: 14 };
 const bonusOf = r => r <= 3 ? 0 : r <= 6 ? 1 : r <= 9 ? 2 : 3;
-const PICKS = { 2: { key: 'II', label: 'Additional Tier II' }, 5: { key: 'III', label: 'Additional Tier III' }, 6: { key: 'unique', label: 'Unique' },
+const PICKS = { 1: { key: 'starter', label: 'Starter' }, 2: { key: 'II', label: 'Additional Tier II' }, 5: { key: 'III', label: 'Additional Tier III' }, 6: { key: 'unique', label: 'Unique' },
   8: { key: 'IV', label: 'Additional Tier IV' }, 9: { key: 'legendary', label: 'Legendary' } };
 const levelFromXp = xp => { let l = 2; for (let k = 3; k <= MAX_LEVEL; k++) if (xp >= XP_CUM[k]) l = k; return l; };
 const isUnholdable = key => !!ITEMS[key].flags.unholdable;
@@ -61,6 +61,11 @@ class Game {
     return null;
   }
   idraw() { return this.ideck.length ? this.ideck.pop() : null; }
+  idrawStarter() {
+    // topmost Tier I item a Pokemon can hold
+    for (let i = this.ideck.length - 1; i >= 0; i--) { const it = this.ideck[i]; if (it.tier === 'I' && !isUnholdable(it.key)) return this.ideck.splice(i, 1)[0]; }
+    return null;
+  }
   returnCard(c, owner) {
     if (owner) { for (const it of c.items) owner.inv.push(it); }
     c.items = [];
@@ -161,11 +166,20 @@ class Game {
     const ev = PICKS[r];
     if (ev) {
       const order = this.shopOrder();
-      const pool = this.picks[ev.key];
-      for (const p of order) {
-        const deal = [];
-        for (let i = 0; i < 3 && pool.length; i++) deal.push(pool.pop());
-        p.deal = deal;
+      if (ev.key === 'starter') {
+        // each starter is a Tier I card bundled with a holdable Tier I item (never a gem)
+        for (const p of order) {
+          const deal = [], gifts = [];
+          for (let i = 0; i < 3; i++) { const c = this.draw('I'); if (!c) break; deal.push(c); gifts.push(this.idrawStarter()); }
+          p.deal = deal; p.dealItems = gifts;
+        }
+      } else {
+        const pool = this.picks[ev.key];
+        for (const p of order) {
+          const deal = [];
+          for (let i = 0; i < 3 && pool.length; i++) deal.push(pool.pop());
+          p.deal = deal;
+        }
       }
       this.pickEvent = ev;
       for (const p of this.players) if (p.bot && p.deal) this.botPick(p);
@@ -180,6 +194,14 @@ class Game {
     this.finishPick(p, chosen);
   }
   finishPick(p, c) {
+    if (this.pickEvent.key === 'starter') {
+      const gifts = p.dealItems || [], gift = gifts[p.deal.indexOf(c)];
+      p.deal.forEach((d, i) => { if (d !== c) { this.returnCard(d, null); if (gifts[i]) this.returnItem(gifts[i]); } });
+      p.deal = null; p.dealItems = null; this.addCard(p, c);
+      if (gift) p.inv.push(gift);
+      this.say(`${p.name} starts with ${c.spec.name}${gift ? ' + ' + ITEMS[gift.key].name : ''}`, 'pick');
+      return;
+    }
     const pool = this.picks[this.pickEvent.key];
     for (const d of p.deal) if (d !== c) pool.unshift(d);
     p.deal = null; this.addCard(p, c); p.stats.picks++;
@@ -380,7 +402,7 @@ Game.prototype.serialize = function () {
   const addItem = it => { if (it) items.set(it.uid, it); return it ? it.uid : null; };
   const addCard = c => { if (!c) return null; cards.set(c.uid, { u: c.uid, s: c.spec.id, i: c.items.map(addItem) }); return c.uid; };
   const pl = this.players.map(p => ({ idx: p.idx, name: p.name, bot: p.bot, persona: p.persona, gold: p.gold, xp: p.xp, level: p.level, cards: p.cards.map(addCard), order: p.order.slice(), inv: p.inv.map(addItem),
-    points: p.points, streak: p.streak, wins: p.wins, losses: p.losses, draws: p.draws, inc: p.inc, deal: p.deal ? p.deal.map(addCard) : null, stats: p.stats, last: p.last, hist: p.hist, churned: p.churned || null }));
+    points: p.points, streak: p.streak, wins: p.wins, losses: p.losses, draws: p.draws, inc: p.inc, deal: p.deal ? p.deal.map(addCard) : null, dealItems: p.dealItems ? p.dealItems.map(addItem) : null, stats: p.stats, last: p.last, hist: p.hist, churned: p.churned || null }));
   const lists = o => { const r = {}; for (const k in o) r[k] = o[k].map(addCard); return r; };
   const data = { v: 1, seed: this.seed, rng: this.rng.getState(), uid: this.uid, round: this.round, phase: this.phase, human: this.human, log: this.log.slice(-120),
     players: pl, deck: lists(this.deck), picks: lists(this.picks), hatch: lists(this.hatch), row: Object.fromEntries(Object.keys(this.row).map(t => [t, this.row[t].map(addCard)])),
@@ -400,7 +422,7 @@ Game.deserialize = function (d) {
   g.deck = lists(d.deck); g.picks = lists(d.picks); g.hatch = lists(d.hatch);
   g.row = {}; for (const t in d.row) g.row[t] = d.row[t].map(C);
   g.irow = d.irow.map(I); g.ideck = d.ideck.map(I);
-  g.players = d.players.map(p => Object.assign({}, p, { cards: p.cards.map(C), inv: p.inv.map(I), deal: p.deal ? p.deal.map(C) : null }));
+  g.players = d.players.map(p => Object.assign({}, p, { cards: p.cards.map(C), inv: p.inv.map(I), deal: p.deal ? p.deal.map(C) : null, dealItems: p.dealItems ? p.dealItems.map(I) : null }));
   g.pickEvent = d.pickEvent;
   g.shop = d.shop ? { order: d.shop.order.map(i => g.players[i]), pos: d.shop.pos, acted: d.shop.acted, sweeps: d.shop.sweeps, humanDone: false } : null;
   g.pendingPick = d.pendingPick ? d.pendingPick.map(C) : null;
