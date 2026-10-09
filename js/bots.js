@@ -110,8 +110,9 @@ function attach(g, p) {
   const loose = p.inv.filter(i => !G.isUnholdable(i.key));
   for (const it of loose) {
     const fl = ITEMS[it.key].flags;
-    let pool = inLine().filter(c => c.items.length < 3 && (!fl.evo_only || g.canEvolveFurther(c)));
-    if (!pool.length) pool = g.benchCards(p).filter(c => c.items.length < 3 && (!fl.evo_only || g.canEvolveFurther(c)));
+    const ok = c => c.items.length < 3 && !c.items.some(x => x.key === it.key) && (!fl.evo_only || g.canEvolveFurther(c));
+    let pool = inLine().filter(ok);
+    if (!pool.length) pool = g.benchCards(p).filter(ok);
     if (!pool.length) continue;
     let target;
     if (fl.type) {
@@ -190,10 +191,10 @@ function itemStep(g, p) {
     if (fl.gem) { w = (lineupScore(g, p, lineup, gems.concat([it.key])) - base) * 4 - it.price * 0.3; }
     else if (fl.econ_income) w = (12 - g.round) * 0.7;
     else {
-      const holders = p.cards.filter(c => c.items.length < 3 && (!fl.evo_only || g.canEvolveFurther(c)));
+      const holders = p.cards.filter(c => c.items.length < 3 && !c.items.some(x => x.key === it.key) && (!fl.evo_only || g.canEvolveFurther(c)));
       if (!holders.length) return;
       w = it.price + g.rng.random() * 1.5;
-      if (fl.type) { const hs = lineup.filter(c => c.items.length < 3); let m = 0; for (const c of hs) m = Math.max(m, lineupScore(g, p, lineup, gems, { card: c, type: fl.type }) - base); w += m * 3; }
+      if (fl.type) { const hs = lineup.filter(c => c.items.length < 3 && !c.items.some(x => x.key === it.key)); let m = 0; for (const c of hs) m = Math.max(m, lineupScore(g, p, lineup, gems, { card: c, type: fl.type }) - base); w += m * 3; }
     }
     if (w > bw) { bw = w; best = s; }
   });

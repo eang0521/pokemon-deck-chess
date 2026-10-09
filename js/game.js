@@ -118,6 +118,7 @@ class Game {
     if (!it || !c) return { ok: false, err: 'Not found.' };
     if (isUnholdable(it.key)) return { ok: false, err: 'That item cannot be held: it works from beside your lineup.' };
     if (c.items.length >= 3) return { ok: false, err: 'A Pokemon holds at most 3 items.' };
+    if (c.items.some(x => x.key === it.key)) return { ok: false, err: 'A Pokemon cannot hold two of the same item.' };
     if (ITEMS[it.key].flags.evo_only && !this.canEvolveFurther(c)) return { ok: false, err: 'Only a Pokemon that can still evolve can hold this.' };
     p.inv = p.inv.filter(x => x !== it); c.items.push(it);
     return { ok: true };
@@ -230,26 +231,28 @@ class Game {
   }
   startShop() {
     this.phase = 'shop';
-    this.shop = { order: this.shopOrder(), pos: 0, acted: false, sweeps: 1, humanDone: false };
+    this.shop = { order: this.shopOrder(), pos: 0, acted: false, sweeps: 1, humanDone: false, out: [] };
     for (const p of this.players) if (p.bot) root.PACBots.free(this, p);
   }
   // advance one seat. returns {done} | {human:true, player} | {player, desc}
   stepShop() {
     const S = this.shop;
+    // a player who passes is out of the shop for the rest of the round
     if (S.pos >= S.order.length) {
-      if (!S.acted) return { done: true };
-      S.order = this.shopOrder(); S.pos = 0; S.acted = false; S.sweeps++;
+      const left = this.shopOrder().filter(q => !S.out.includes(q.idx));
+      if (!left.length) return { done: true };
+      S.order = left; S.pos = 0; S.acted = false; S.sweeps++;
     }
     const p = S.order[S.pos];
     if (!p.bot) return { human: true, player: p };
     root.PACBots.free(this, p);
     const desc = root.PACBots.turn(this, p);
     S.pos++;
-    if (desc) { S.acted = true; this.say(desc, 'bot'); }
+    if (desc) { S.acted = true; this.say(desc, 'bot'); } else S.out.push(p.idx);
     return { player: p, desc: desc || null };
   }
   humanDid(acted) { const S = this.shop; if (acted) S.acted = true; S.pos++; }
-  humanPass() { const S = this.shop; S.pos++; return { ok: true }; }
+  humanPass() { const S = this.shop; if (!S.out.includes(this.human)) S.out.push(this.human); S.pos++; return { ok: true }; }
   tradeCredit(p, uids) {
     let credit = 0; const cards = [], items = [];
     for (const u of uids || []) {
@@ -418,7 +421,7 @@ Game.prototype.serialize = function () {
   const data = { v: 1, seed: this.seed, rng: this.rng.getState(), uid: this.uid, round: this.round, phase: this.phase, human: this.human, log: this.log.slice(-120),
     players: pl, deck: lists(this.deck), picks: lists(this.picks), hatch: lists(this.hatch), row: Object.fromEntries(Object.keys(this.row).map(t => [t, this.row[t].map(addCard)])),
     irow: this.irow.map(addItem), ideck: this.ideck.map(addItem), discard: { cards: this.discard.cards.map(addCard), items: this.discard.items.map(addItem) }, pickEvent: this.pickEvent || null,
-    shop: this.shop ? { order: this.shop.order.map(p => p.idx), pos: this.shop.pos, acted: this.shop.acted, sweeps: this.shop.sweeps } : null,
+    shop: this.shop ? { order: this.shop.order.map(p => p.idx), pos: this.shop.pos, acted: this.shop.acted, sweeps: this.shop.sweeps, out: this.shop.out } : null,
     pendingPick: this.pendingPick ? this.pendingPick.map(c => c.uid) : null };
   data.cards = Array.from(cards.values()); data.items = Array.from(items.values());
   return data;
@@ -436,7 +439,7 @@ Game.deserialize = function (d) {
   g.discard = d.discard ? { cards: d.discard.cards.map(C), items: d.discard.items.map(I) } : { cards: [], items: [] };
   g.players = d.players.map(p => Object.assign({}, p, { cards: p.cards.map(C), inv: p.inv.map(I), deal: p.deal ? p.deal.map(C) : null, dealItems: p.dealItems ? p.dealItems.map(I) : null }));
   g.pickEvent = d.pickEvent;
-  g.shop = d.shop ? { order: d.shop.order.map(i => g.players[i]), pos: d.shop.pos, acted: d.shop.acted, sweeps: d.shop.sweeps, humanDone: false } : null;
+  g.shop = d.shop ? { order: d.shop.order.map(i => g.players[i]), pos: d.shop.pos, acted: d.shop.acted, sweeps: d.shop.sweeps, humanDone: false, out: d.shop.out || [] } : null;
   g.pendingPick = d.pendingPick ? d.pendingPick.map(C) : null;
   g.human = d.human;
   return g;
