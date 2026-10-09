@@ -4,7 +4,7 @@
 const UI = window.UI, D = window.PAC_DATA, G = window.PACGame, ITEMS = D.items;
 const { GATE, TIERS, XP_CUM, MAX_LEVEL, TRADE } = G;
 
-UI.state = { g: null, me: null, busy: false, botDelay: 420, selItem: null, autoPass: true, sel: null };
+UI.state = { g: null, me: null, busy: false, botDelay: 420, selItem: null, autoPass: true, sel: null, mtab: 'shop' };
 const S = UI.state;
 
 UI.findInst = function (uid) {
@@ -124,6 +124,13 @@ function standings() {
   const rank = G_.players.slice().sort((a, b) => (b.points - a.points) || (b.wins - a.wins));
   return `<div class="panel stand"><h3>Standings</h3><table><tbody>${rank.map((p, i) => `<tr class="${p.idx === G_.human ? 'you' : ''}"><td class="rk">${i + 1}</td><td class="nm" title="${UI.esc(p.persona ? p.persona.title + ': ' + p.persona.blurb : 'You')}">${UI.esc(p.name)}${p.persona ? `<small>${UI.esc(p.persona.title)}</small>` : '<small>you</small>'}</td><td class="lv">L${p.level}</td><td class="st">${p.streak > 1 ? '<span class="win">▲' + p.streak + '</span>' : p.streak < -1 ? '<span class="loss">▼' + -p.streak + '</span>' : ''}</td><td class="pt">${p.points}</td></tr>`).join('')}</tbody></table></div>`;
 }
+// phone-only tab bar (hidden on wider screens by CSS); S.mtab picks which column shows
+function mobileTabs() {
+  const G_ = g(), p = me();
+  const n = G_.lineupCards(p).filter(c => !G_.hasBow(c)).length, loose = p.inv.filter(i => !G.isUnholdable(i.key)).length;
+  const tab = (k, label, extra, cls) => `<button class="mtab ${S.mtab === k ? 'on' : ''} ${cls || ''}" data-act="mtab" data-tab="${k}">${label}${extra ? `<small>${extra}</small>` : ''}</button>`;
+  return `<nav class="mtabs">${tab('shop', 'Shop', S.humanTurn ? 'your turn' : '', S.humanTurn ? 'turn' : '')}${tab('lineup', 'Lineup', `${n}/${p.level}`)}${tab('items', 'Items', loose ? String(loose) : '', loose ? 'has' : '')}${tab('table', 'Table', '')}</nav>`;
+}
 function logPanel() {
   const G_ = g();
   const lines = G_.log.slice(-40).reverse();
@@ -135,7 +142,7 @@ UI.renderBoard = function () {
   const G_ = g();
   if (!G_) return;
   const scroll = { shop: (app.querySelector('.colshop') || {}).scrollTop, mine: (app.querySelector('.mine') || {}).scrollTop, side: (app.querySelector('.side') || {}).scrollTop };
-  app.innerHTML = `<div class="game">${topBar()}<div class="cols"><div class="colshop">${shopRows()}</div><div class="mine">${lineupPanel()}${benchPanel()}${invPanel()}</div><aside class="side">${standings()}${logPanel()}</aside></div></div>`;
+  app.innerHTML = `<div class="game">${topBar()}<div class="cols" data-mtab="${S.mtab}"><div class="colshop">${shopRows()}</div><div class="mine">${lineupPanel()}${benchPanel()}${invPanel()}</div><aside class="side">${standings()}${logPanel()}</aside></div>${mobileTabs()}</div>`;
   const m = app.querySelector('.mine'); if (m && scroll.mine) m.scrollTop = scroll.mine;
   const sh = app.querySelector('.colshop'); if (sh && scroll.shop) sh.scrollTop = scroll.shop;
   const sd = app.querySelector('.side'); if (sd && scroll.side) sd.scrollTop = scroll.side;

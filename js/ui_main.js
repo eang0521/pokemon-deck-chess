@@ -306,6 +306,7 @@ function toLine(uid, pos) {
 function toBench(uid) { const p = me(); S.g.setLineup(p, p.order.filter(u => u !== uid)); }
 function move(uid, d) { const p = me(); const i = p.order.indexOf(uid), j = i + d; if (i < 0 || j < 0 || j >= p.order.length) return; const o = p.order.slice(); [o[i], o[j]] = [o[j], o[i]]; p.order = o; }
 
+const isPhone = () => window.matchMedia('(max-width:480px)').matches;
 function giveItem(itemUid, cardUid) {
   const r = S.g.attachItem(me(), itemUid, cardUid);
   if (!r.ok) UI.toast(r.err, 'bad'); S.selItem = null; return r.ok;
@@ -363,7 +364,14 @@ document.addEventListener('click', e => {
       if (S.selItem) { if (giveItem(S.selItem, uid)) { UI.renderBoard(); saveGame(); } else UI.renderBoard(); break; }
       openOwned(uid); break;
     }
-    case 'sel-item': S.selItem = S.selItem === +t.dataset.item ? null : +t.dataset.item; UI.renderBoard(); if (S.selItem) UI.toast('Now click a Pokémon to give it the item.', 'dim'); break;
+    case 'sel-item': {
+      S.selItem = S.selItem === +t.dataset.item ? null : +t.dataset.item;
+      // on phones the Items tab hides the lineup, so jump there to pick the holder
+      const tabbed = S.selItem && S.mtab === 'items' && isPhone();
+      if (tabbed) { S.mtab = 'lineup'; window.scrollTo(0, 0); }
+      UI.renderBoard(); if (S.selItem) UI.toast(tabbed ? 'Now tap a Pokémon to give it the item.' : 'Now click a Pokémon to give it the item.', 'dim'); break;
+    }
+    case 'mtab': S.mtab = t.dataset.tab; window.scrollTo(0, 0); UI.renderBoard(); break;
     case 'item-card': { e.stopPropagation(); const r = g.detachItem(me(), +t.dataset.item); if (r.ok) { UI.renderBoard(); saveGame(); } break; }
     case 'to-bench': e.stopPropagation(); toBench(uid); UI.renderBoard(); reopenIfOwned(uid); saveGame(); break;
     case 'to-line': e.stopPropagation(); toLine(uid); UI.renderBoard(); reopenIfOwned(uid); saveGame(); break;

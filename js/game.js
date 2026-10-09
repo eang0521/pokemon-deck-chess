@@ -200,13 +200,13 @@ class Game {
       p.deal.forEach((d, i) => { if (d !== c) { this.discard.cards.push(d); if (gifts[i]) this.discard.items.push(gifts[i]); } });
       p.deal = null; p.dealItems = null; this.addCard(p, c);
       if (gift) p.inv.push(gift);
-      this.say(`${p.name} starts with ${c.spec.name}${gift ? ' + ' + ITEMS[gift.key].name : ''}`, 'pick');
+      this.say(`${p.name} ${p.name === 'You' ? 'start' : 'starts'} with ${c.spec.name}${gift ? ' + ' + ITEMS[gift.key].name : ''}`, 'pick');
       return;
     }
     const pool = this.picks[this.pickEvent.key];
     for (const d of p.deal) if (d !== c) pool.unshift(d);
     p.deal = null; this.addCard(p, c); p.stats.picks++;
-    this.say(`${p.name} picks ${c.spec.name}`, 'pick');
+    this.say(`${p.name} ${p.name === 'You' ? 'pick' : 'picks'} ${c.spec.name}`, 'pick');
   }
   humanPick(uid) {
     const p = this.players[this.human]; const c = (p.deal || []).find(x => x.uid === uid);
