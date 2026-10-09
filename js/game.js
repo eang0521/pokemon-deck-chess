@@ -10,6 +10,7 @@ const XP_CUM = { 2: 0, 3: 2, 4: 6, 5: 14, 6: 30, 7: 56, 8: 94 };
 const MAX_LEVEL = 8;
 const TRADE = { I: 0, II: 2, III: 4, IV: 7, V: 14 };
 const bonusOf = r => r <= 3 ? 0 : r <= 6 ? 1 : r <= 9 ? 2 : 3;
+const MARKET_DECK = 32, ROW_SIZE = 4;
 const PICKS = { 1: { key: 'starter', label: 'Starter' }, 2: { key: 'II', bundle: true, label: 'Additional Tier II' }, 5: { key: 'III', bundle: true, label: 'Additional Tier III' }, 6: { key: 'unique', label: 'Unique' },
   8: { key: 'IV', bundle: true, label: 'Additional Tier IV' }, 9: { key: 'legendary', label: 'Legendary' } };
 const levelFromXp = xp => { let l = 2; for (let k = 3; k <= MAX_LEVEL; k++) if (xp >= XP_CUM[k]) l = k; return l; };
@@ -33,14 +34,15 @@ class Game {
       else if (s.pool === 'legendary') this.picks.legendary.push(mk(s));
       else if (s.pool === 'hatch') this.hatch[s.tier].push(mk(s));
     }
-    for (const k in this.deck) this.rng.shuffle(this.deck[k]);
+    // market deck of each tier: 32 random Core Pokemon of that tier (the rest stay out of the game)
+    for (const k in this.deck) { this.rng.shuffle(this.deck[k]); this.deck[k] = this.deck[k].slice(0, MARKET_DECK); }
     for (const k in this.picks) this.rng.shuffle(this.picks[k]);
     for (const k in this.hatch) this.rng.shuffle(this.hatch[k]);
     this.ideck = [];
     for (const it of DATA.itemdeck) for (let i = 0; i < it.copies; i++) this.ideck.push({ uid: this.uid++, key: it.key, tier: it.tier, price: it.price, text: it.text, chips: it.chips });
     this.rng.shuffle(this.ideck);
-    this.row = { I: [null, null, null], II: [null, null, null], III: [null, null, null], IV: [null, null, null], V: [null, null, null] };
-    for (const t of TIERS) for (let i = 0; i < 3; i++) this.row[t][i] = this.draw(t);
+    this.row = {}; for (const t of TIERS) this.row[t] = Array(ROW_SIZE).fill(null);
+    for (const t of TIERS) for (let i = 0; i < ROW_SIZE; i++) this.row[t][i] = this.draw(t);
     this.irow = [null, null, null, null];
     this.discard = { cards: [], items: [] }; // out of play for the rest of the game
     for (let i = 0; i < 4; i++) this.irow[i] = this.idraw();
@@ -63,8 +65,8 @@ class Game {
   }
   idraw() { return this.ideck.length ? this.ideck.pop() : null; }
   idrawStarter(tier = 'I') {
-    // topmost item of the given tier that a Pokemon can hold (gems can't be held)
-    for (let i = this.ideck.length - 1; i >= 0; i--) { const it = this.ideck[i]; if (it.tier === tier && !isUnholdable(it.key)) return this.ideck.splice(i, 1)[0]; }
+    // topmost item of the given tier (any item, gems included)
+    for (let i = this.ideck.length - 1; i >= 0; i--) { const it = this.ideck[i]; if (it.tier === tier) return this.ideck.splice(i, 1)[0]; }
     return null;
   }
   returnCard(c, owner) {
@@ -172,7 +174,7 @@ class Game {
         const tier = ev.key === 'starter' ? 'I' : ev.key;
         for (const p of order) {
           const deal = [], gifts = [];
-          for (let i = 0; i < 3; i++) { const c = ev.key === 'starter' ? this.draw('I') : this.picks[ev.key].pop(); if (!c) break; deal.push(c); gifts.push(this.idrawStarter(tier)); }
+          for (let i = 0; i < 3; i++) { const c = this.picks[tier].pop(); if (!c) break; deal.push(c); gifts.push(this.idrawStarter(tier)); }
           p.deal = deal; p.dealItems = gifts;
         }
       } else {
@@ -197,13 +199,14 @@ class Game {
   }
   finishPick(p, c) {
     if (this.pickEvent.key === 'starter' || this.pickEvent.bundle) {
-      const starter = this.pickEvent.key === 'starter', pool = starter ? null : this.picks[this.pickEvent.key];
+      const starter = this.pickEvent.key === 'starter', tier = starter ? 'I' : this.pickEvent.key;
       const gifts = p.dealItems || [], gift = gifts[p.deal.indexOf(c)];
       p.deal.forEach((d, i) => {
         if (d === c) return;
-        if (starter) this.discard.cards.push(d); else pool.unshift(d);
-        if (gifts[i]) this.discard.items.push(gifts[i]);
+        this.deck[tier].push(d); // unchosen Pokemon are shuffled into the market deck of their tier
+        if (gifts[i]) { if (starter) this.discard.items.push(gifts[i]); else this.returnItem(gifts[i]); }
       });
+      this.rng.shuffle(this.deck[tier]);
       p.deal = null; p.dealItems = null; this.addCard(p, c);
       if (gift) p.inv.push(gift);
       if (!starter) p.stats.picks++;

@@ -132,7 +132,7 @@ function evoStep(g, p) {
   const ps = pers(p);
   const cs = p.cards.slice().sort((a, b) => b.spec.value - a.spec.value);
   let best = null;
-  for (const c of cs) for (const t of G.TIERS) for (let s = 0; s < 3; s++) {
+  for (const c of cs) for (const t of G.TIERS) for (let s = 0; s < g.row[t].length; s++) {
     const h = g.row[t][s]; if (!h) continue;
     if (!g.evolveTargets(p, h).includes(c)) continue;
     const cost = Math.max(0, h.spec.price - c.spec.price);

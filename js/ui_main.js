@@ -4,7 +4,7 @@
 const UI = window.UI, D = window.PAC_DATA, G = window.PACGame, B = window.PACBots, E = window.PACEngine, ITEMS = D.items;
 const S = UI.state;
 const { GATE, TIERS, TRADE } = G;
-const SAVE_KEY = 'pac-digital-save-v1', PREF_KEY = 'pac-digital-prefs-v1';
+const SAVE_KEY = 'pac-digital-save-v2', PREF_KEY = 'pac-digital-prefs-v1';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const me = () => S.g.players[S.g.human];
 const $app = () => document.getElementById('app');
@@ -97,9 +97,9 @@ function showPick() {
   const starter = ev.key === 'starter', bundle = starter || !!ev.bundle, gifts = me().dealItems || [];
   const cards = deal.map((c, i) => `<div class="pickc">${UI.cardDetail(c.spec, c)}${bundle && gifts[i] ? `<div class="pickgift"><small>Comes with (unattached)</small>${UI.itemTile(gifts[i], { noPrice: true })}</div>` : ''}<button class="btn big" data-act="do-pick" data-uid="${c.uid}">Take ${UI.esc(c.spec.name)}</button></div>`).join('');
   const n = deal.length, word = ['zero', 'one', 'two', 'three', 'four', 'five'][n] || n;
-  const blurb = bundle && !starter ? `Pick one of ${word}. Each comes with a random item of the same tier that goes to your Items panel. The others return to the bottom of the pool and their items are discarded.`
+  const blurb = bundle && !starter ? `Pick one of ${word}. Each comes with a random item of the same tier that goes to your Items panel. The Pokémon you don't take are shuffled into that tier's market deck; their items go back to the bottom of the item deck.`
     : !bundle ? `${word[0].toUpperCase() + word.slice(1)} cards were dealt to you. Keep one; the others go to the bottom of the pool. It joins your bench (or lineup if there is room).`
-    : starter ? 'Choose your starting Pokémon. Each comes with a Tier I item that goes to your Items panel, ready to give to any Pokémon. The other two (and their items) go to the discard pile.'
+    : starter ? 'Choose your starting Pokémon. Each comes with a Tier I item that goes to your Items panel, ready to give to any Pokémon. The other two are shuffled into the Tier I market deck (their items are discarded).'
     : '';
   UI.modal(`<h2>${starter ? 'Choose your starter' : UI.esc(ev.label) + ' pick'}</h2><p class="muted">${blurb}</p><div class="pickrow${n > 3 ? ' many' : ''}">${cards}</div>`, { locked: true, closable: false, cls: 'wide' });
 }
@@ -320,10 +320,10 @@ function showRules() {
   UI.modal(`<h2>How to play</h2><div class="rules">
     <p><b>Goal.</b> Everyone starts with 20 points. After each duel the winner gains, and the loser loses, <i>surviving Pokémon + round bonus</i> (R1–3 +0, R4–6 +1, R7–9 +2, R10–12 +3). Most points after round 12 wins. Nobody is eliminated.</p>
     <p><b>A round.</b> Income → (pick event) → shop → duel. Income is 5 + interest (1 per 5 gold banked, max 3) + streak gold (2 in a row +1, 3 → +2, 4+ → +3, wins or losses) and +2 XP. Round 1 has no income.</p>
-    <p><b>The shop.</b> Players take turns, worst score first, one action each: buy a card or item, evolve, churn (1 gold) or pass. It repeats until everybody passes. Tier II opens at level 3, III at 4, IV at 5, V at 6. Buying XP (4 gold = 4 XP), moving cards and giving items are free and don't use your turn.</p>
+    <p><b>The shop.</b> Each tier has a market deck of 32 random Pokémon of that tier, with 4 face up at all times. Players take turns, worst score first, one action each: buy a card or item, evolve, churn (1 gold) or pass. It repeats until everybody passes. Tier II opens at level 3, III at 4, IV at 5, V at 6. Buying XP (4 gold = 4 XP), moving cards and giving items are free and don't use your turn.</p>
     <p><b>Level and lineup.</b> Level 3 needs 2 XP total, then 6, 14, 30, 56 (levels 4–7). Your lineup holds as many Pokémon as your level. Order matters: your first Pokémon starts the fight and the next one enters when one is knocked out.</p>
     <p><b>Trade-in.</b> You never sell for gold. Instead trade cards or items in as payment: trade-in value I 0, II 2, III 4, IV 7, V 14, Unique 15, Legendary 30. <b>Evolve</b> only if the evolved card is face up in the shop: your old card counts at its full price.</p>
-    <p><b>Picks.</b> Before round 1 everyone chooses 1 of 3 Tier I starters, each with a free Tier I item (never a gem: gems can't be held); the ones nobody takes are discarded. Before rounds 2, 5 and 8 you pick 1 of 3 Additional cards (Tier II/III/IV), each bundled with a random item of the same tier; before round 6 a Unique and before round 9 a Legendary, each chosen from 5 cards (no items).</p>
+    <p><b>Picks.</b> Before round 1 everyone chooses 1 of 3 Tier I Additional cards as a starter, and before rounds 2, 5 and 8 1 of 3 Additional cards (Tier II/III/IV). Each is bundled with a random item of the same tier (any item, gems included). Every Pokémon you don't take is shuffled into the market deck of its tier; before round 6 a Unique and before round 9 a Legendary, each chosen from 5 cards (no items).</p>
     <p><b>Duels.</b> Each Pokémon attacks, gains 1 charge, and casts its charge power when its charge reaches PP. A faster foe pushes the initiative bar; synergies activate from your whole lineup and stay fixed. Hover any card for details. 5 crit tokens = one ×2 crit.</p>
     <p><b>Shields &amp; overtime.</b> Shield soaks damage but never the last point: every hit deals at least 1 damage to HP. After round 25 of a duel, each Pokémon takes true damage after its own turn (1, then +1 every 5 rounds) that ignores shield.</p>
     <p><b>Baby synergy.</b> After you lose a duel with Baby level I/II/III you hatch a Tier II/III/IV Hatch card.</p>

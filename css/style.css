@@ -82,7 +82,7 @@ h4{font-size:12px;color:var(--mut);margin:10px 0 6px;text-transform:uppercase;le
 .tlabel{width:34px;flex:none;border-radius:8px;background:var(--tcol);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.4)}
 .tlabel small{font-size:9px;color:#fff;opacity:.85;font-weight:600}
 .trow.locked .tlabel{filter:grayscale(.8) brightness(.6)}
-.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1;min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;flex:1;min-width:0}
 .tile{position:relative;display:grid;grid-template-columns:44px 1fr;grid-template-rows:1fr auto;gap:2px 6px;background:linear-gradient(#1d2b47,#17233b);border:1px solid var(--line);border-left:4px solid var(--tcol);border-radius:9px;padding:6px 7px 4px;min-height:100px;cursor:pointer;transition:transform .08s,box-shadow .12s;min-width:0}
 .tile:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.4);border-color:#5b7cc4}
 .tile.dim{opacity:.38}.tile.dim:hover{transform:none;box-shadow:none}
@@ -175,7 +175,7 @@ h4{font-size:12px;color:var(--mut);margin:10px 0 6px;text-transform:uppercase;le
 .tr-row{display:grid;grid-template-columns:20px 28px 1fr auto;gap:6px;align-items:center;padding:3px 4px;border-radius:6px;cursor:pointer}.tr-row:hover{background:#1e2c4a}.tr-row b{color:var(--accent)}
 .evo-row{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;margin-bottom:5px}
 .held{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow:auto}.held-row{display:grid;grid-template-columns:32px 1fr auto;gap:8px;align-items:center;font-size:12px;background:#111b30;border-radius:8px;padding:5px 7px}
-.pickrow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.pickrow.many{display:flex;flex-wrap:wrap;justify-content:center}.pickrow.many .pickc{width:calc((100% - 28px)/3)}.pickc{display:flex;flex-direction:column;gap:10px}.pickc .detail{flex:1;border:1px solid #2f4170}
+.pickrow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.pickc{display:flex;flex-direction:column;gap:10px}.pickc .detail{flex:1;border:1px solid #2f4170}
 .mtabs{display:none}
 .drag-ghost{position:fixed;left:0;top:0;z-index:400;pointer-events:none;opacity:.9;box-shadow:0 10px 26px rgba(0,0,0,.6);transform-origin:center}
 [draggable="true"]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
@@ -238,7 +238,7 @@ h4{font-size:12px;color:var(--mut);margin:10px 0 6px;text-transform:uppercase;le
 .hatchnote{background:#2a2412;border:1px solid var(--accent);border-radius:10px;padding:6px 14px;display:inline-block}
 
 @media (max-width:1180px){.cols{grid-template-columns:minmax(440px,520px) 1fr}.side{display:none}.arena{grid-template-columns:140px 1fr 140px}}
-@media (max-width:860px){body{overflow:auto}#app{height:auto}.cols{grid-template-columns:1fr}.game{height:auto}.dlg{grid-template-columns:1fr}.pickrow{grid-template-columns:1fr}.pickrow.many .pickc{width:100%}.center{grid-template-columns:1fr}.arena{grid-template-columns:1fr}}
+@media (max-width:860px){body{overflow:auto}#app{height:auto}.cols{grid-template-columns:1fr}.game{height:auto}.dlg{grid-template-columns:1fr}.pickrow{grid-template-columns:1fr}.center{grid-template-columns:1fr}.arena{grid-template-columns:1fr}}
 
 body.in-duel #toast-root{display:none}
 .turnorder{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 8px;font-size:11px;align-items:center;color:var(--mut)}
@@ -252,7 +252,7 @@ body.in-duel #toast-root{display:none}
 .topbar{gap:6px 12px;padding:6px 10px}.tb-phase{min-width:0;flex-basis:100%}.tb-stats{gap:10px;flex-wrap:wrap}.tb-stat{font-size:15px;min-width:0}
 .btn.xp{white-space:nowrap}
 .cols{padding:8px;gap:8px}.panel,.shop{padding:8px}
-.trow{gap:4px}.tlabel{width:22px}.tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.trow{gap:4px}.tlabel{width:22px}.tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
 .tile{grid-template-columns:1fr;grid-template-rows:auto;padding:5px 4px 4px;min-height:0;gap:2px}
 .t-por{grid-row:auto;justify-content:center}.t-por .por{width:40px;height:40px}
 .t-name{font-size:12px}.t-pow{display:none}.t-foot{grid-column:1}
