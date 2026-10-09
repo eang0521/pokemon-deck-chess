@@ -10,8 +10,8 @@ const XP_CUM = { 2: 0, 3: 2, 4: 6, 5: 14, 6: 30, 7: 56, 8: 94 };
 const MAX_LEVEL = 8;
 const TRADE = { I: 0, II: 2, III: 4, IV: 7, V: 14 };
 const bonusOf = r => r <= 3 ? 0 : r <= 6 ? 1 : r <= 9 ? 2 : 3;
-const PICKS = { 1: { key: 'starter', label: 'Starter' }, 2: { key: 'II', label: 'Additional Tier II' }, 5: { key: 'III', label: 'Additional Tier III' }, 6: { key: 'unique', label: 'Unique' },
-  8: { key: 'IV', label: 'Additional Tier IV' }, 9: { key: 'legendary', label: 'Legendary' } };
+const PICKS = { 1: { key: 'starter', label: 'Starter' }, 2: { key: 'II', bundle: true, label: 'Additional Tier II' }, 5: { key: 'III', bundle: true, label: 'Additional Tier III' }, 6: { key: 'unique', label: 'Unique' },
+  8: { key: 'IV', bundle: true, label: 'Additional Tier IV' }, 9: { key: 'legendary', label: 'Legendary' } };
 const levelFromXp = xp => { let l = 2; for (let k = 3; k <= MAX_LEVEL; k++) if (xp >= XP_CUM[k]) l = k; return l; };
 const isUnholdable = key => !!ITEMS[key].flags.unholdable;
 const NAME_TYPES = DATA.syn_th;
@@ -62,9 +62,9 @@ class Game {
     return null;
   }
   idraw() { return this.ideck.length ? this.ideck.pop() : null; }
-  idrawStarter() {
-    // topmost Tier I item a Pokemon can hold
-    for (let i = this.ideck.length - 1; i >= 0; i--) { const it = this.ideck[i]; if (it.tier === 'I' && !isUnholdable(it.key)) return this.ideck.splice(i, 1)[0]; }
+  idrawStarter(tier = 'I') {
+    // topmost item of the given tier that a Pokemon can hold (gems can't be held)
+    for (let i = this.ideck.length - 1; i >= 0; i--) { const it = this.ideck[i]; if (it.tier === tier && !isUnholdable(it.key)) return this.ideck.splice(i, 1)[0]; }
     return null;
   }
   returnCard(c, owner) {
@@ -167,19 +167,20 @@ class Game {
     const ev = PICKS[r];
     if (ev) {
       const order = this.shopOrder();
-      if (ev.key === 'starter') {
-        // each starter is a Tier I card bundled with a holdable Tier I item (never a gem)
+      if (ev.key === 'starter' || ev.bundle) {
+        // each dealt card is bundled with a random holdable item of the same tier (never a gem)
+        const tier = ev.key === 'starter' ? 'I' : ev.key;
         for (const p of order) {
           const deal = [], gifts = [];
-          for (let i = 0; i < 3; i++) { const c = this.draw('I'); if (!c) break; deal.push(c); gifts.push(this.idrawStarter()); }
+          for (let i = 0; i < 3; i++) { const c = ev.key === 'starter' ? this.draw('I') : this.picks[ev.key].pop(); if (!c) break; deal.push(c); gifts.push(this.idrawStarter(tier)); }
           p.deal = deal; p.dealItems = gifts;
         }
       } else {
         const pool = this.picks[ev.key];
         for (const p of order) {
           const deal = [];
-          for (let i = 0; i < 3 && pool.length; i++) deal.push(pool.pop());
-          p.deal = deal;
+          for (let i = 0; i < 5 && pool.length; i++) deal.push(pool.pop());
+          p.deal = deal; p.dealItems = null;
         }
       }
       this.pickEvent = ev;
@@ -195,12 +196,18 @@ class Game {
     this.finishPick(p, chosen);
   }
   finishPick(p, c) {
-    if (this.pickEvent.key === 'starter') {
+    if (this.pickEvent.key === 'starter' || this.pickEvent.bundle) {
+      const starter = this.pickEvent.key === 'starter', pool = starter ? null : this.picks[this.pickEvent.key];
       const gifts = p.dealItems || [], gift = gifts[p.deal.indexOf(c)];
-      p.deal.forEach((d, i) => { if (d !== c) { this.discard.cards.push(d); if (gifts[i]) this.discard.items.push(gifts[i]); } });
+      p.deal.forEach((d, i) => {
+        if (d === c) return;
+        if (starter) this.discard.cards.push(d); else pool.unshift(d);
+        if (gifts[i]) this.discard.items.push(gifts[i]);
+      });
       p.deal = null; p.dealItems = null; this.addCard(p, c);
       if (gift) p.inv.push(gift);
-      this.say(`${p.name} ${p.name === 'You' ? 'start' : 'starts'} with ${c.spec.name}${gift ? ' + ' + ITEMS[gift.key].name : ''}`, 'pick');
+      if (!starter) p.stats.picks++;
+      this.say(`${p.name} ${starter ? (p.name === 'You' ? 'start' : 'starts') : (p.name === 'You' ? 'pick' : 'picks')} ${c.spec.name}${gift ? ' + ' + ITEMS[gift.key].name : ''}`, 'pick');
       return;
     }
     const pool = this.picks[this.pickEvent.key];

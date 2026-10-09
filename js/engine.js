@@ -326,7 +326,7 @@ class Duel {
 
   item_enter(sd, c) {
     const f = c.fl, st = c.itst, rk = sd.rk;
-    if (f.cheap) c.ppmax = Math.max(1, c.ppmax - 1);
+    if (f.cheap) c.ppmax = Math.max(2, c.ppmax - 1);
     if (st.hp || f.hpmult) {
       const add = st.hp + pyround(c.hp0 * f.hpmult);
       c.maxhp = Math.max(1, c.maxhp + add); c.hp = Math.min(c.maxhp, Math.max(1, c.hp + add));
@@ -670,7 +670,7 @@ class Duel {
       if (kind === 'S' && dst.fl.lens && src !== dst) this.hit(dst, src, Math.min(blk, amount), 'T');
     }
     if (kind === 'S' && src.fl.nomicon && src !== dst) { this.apply_st(dst, 'burn', 3); dst.perm.sdef = Math.max(dst.perm.sdef - 1, -2); }
-    const absorbed = Math.min(dst.shield, dmg); dst.shield -= absorbed; const dmg_hp = dmg - absorbed;
+    const absorbed = Math.max(0, Math.min(dst.shield, dmg - 1)); dst.shield -= absorbed; const dmg_hp = dmg - absorbed;
     dst.hp -= dmg_hp; src.dealt += dmg;
     if (src === this.acting && src !== dst && src.lv('HUMAN') && dst.hp > -999) { if (basic) this.heal(src, [1, 2, 3][src.lv('HUMAN') - 1]); }
     this.say(`${src.name} hits ${dst.name} for ${dmg} ${{ P: 'physical', S: 'special', T: 'true' }[kind]}` + (absorbed ? ` (${absorbed} absorbed by shield)` : ''));
@@ -964,6 +964,10 @@ class Duel {
       this.end_turn(me, foe);
       bar += mover === A ? -cost : cost;
       last = mover;
+      if (this.nrounds > 25 && me.hp > 0) {
+        const od = 1 + Math.floor((this.nrounds - 25) / 5);
+        me.hp -= od; this.say(`Overtime: ${me.name} takes ${od} true damage`);
+      }
       for (const sd0 of this.sides) {
         const a0 = sd0.active;
         if (a0.hp <= 0 && a0.fl.revive && !a0.revived) {
