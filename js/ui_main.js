@@ -389,37 +389,114 @@ document.addEventListener('keydown', e => {
   if (e.key === 'x' && !document.body.classList.contains('has-modal')) document.querySelector('[data-act="buy-xp"]') && document.querySelector('[data-act="buy-xp"]').click();
 });
 
-// drag and drop
+// drag and drop (mouse via HTML5 drag events, touch via the long-press handlers below; both drop through dropOn)
 let dragData = null;
+const DROP_ZONES = '[data-zone],.vcard[data-uid],.tile[data-uid],.slot[data-drop]';
+function dragFrom(el) {
+  const c = el && el.closest && el.closest('[data-uid][draggable="true"]'), i = el && el.closest && el.closest('[data-item][draggable="true"]');
+  return i ? { t: 'i', u: +i.dataset.item, el: i } : c ? { t: 'c', u: +c.dataset.uid, el: c } : null;
+}
+function markOver(z) { document.querySelectorAll('.over').forEach(x => x !== z && x.classList.remove('over')); if (z) z.classList.add('over'); }
+function endDrag() { dragData = null; document.body.classList.remove('dragging'); markOver(null); }
+// apply a drop of dd onto element el; returns true when something happened
+function dropOn(dd, el) {
+  if (!dd || !el || !S.g) return false;
+  if (dd.t === 'i') {
+    const tgt = el.closest('.vcard[data-uid],.tile[data-uid],.slot[data-card]'); if (!tgt) return false;
+    const cu = +(tgt.dataset.uid || tgt.dataset.card); if (giveItem(dd.u, cu)) { UI.renderBoard(); saveGame(); }
+    return true;
+  }
+  const slot = el.closest('[data-zone="line"]'), bench = el.closest('[data-zone="bench"]'), lend = el.closest('[data-zone="line-end"]');
+  if (slot) toLine(dd.u, +slot.dataset.pos);
+  else if (bench) toBench(dd.u);
+  else if (lend) toLine(dd.u);
+  else return false;
+  UI.renderBoard(); saveGame(); return true;
+}
 document.addEventListener('dragstart', e => {
-  const c = e.target.closest && e.target.closest('[data-uid][draggable="true"]'), i = e.target.closest && e.target.closest('[data-item][draggable="true"]');
-  if (i) dragData = { t: 'i', u: +i.dataset.item }; else if (c) dragData = { t: 'c', u: +c.dataset.uid }; else return;
+  const d = dragFrom(e.target); if (!d) return;
+  dragData = { t: d.t, u: d.u };
   e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', JSON.stringify(dragData)); } catch (_) { }
   document.body.classList.add('dragging');
 });
-document.addEventListener('dragend', () => { dragData = null; document.body.classList.remove('dragging'); document.querySelectorAll('.over').forEach(x => x.classList.remove('over')); });
+document.addEventListener('dragend', endDrag);
 document.addEventListener('dragover', e => {
   if (!dragData) return;
-  const z = e.target.closest('[data-zone],.vcard[data-uid],.tile[data-uid],.slot[data-drop]'); if (!z) return;
-  e.preventDefault(); document.querySelectorAll('.over').forEach(x => x !== z && x.classList.remove('over')); z.classList.add('over');
+  const z = e.target.closest(DROP_ZONES); if (!z) return;
+  e.preventDefault(); markOver(z);
 });
 document.addEventListener('drop', e => {
-  if (!dragData || !S.g) return;
-  const dd = dragData; dragData = null; document.body.classList.remove('dragging');
-  document.querySelectorAll('.over').forEach(x => x.classList.remove('over'));
-  const g = S.g, p = me();
-  if (dd.t === 'i') {
-    const tgt = e.target.closest('.vcard[data-uid],.tile[data-uid],.slot[data-card]'); if (!tgt) return;
-    e.preventDefault(); const cu = +(tgt.dataset.uid || tgt.dataset.card); if (giveItem(dd.u, cu)) { UI.renderBoard(); saveGame(); }
+  if (!dragData) return;
+  const dd = dragData; endDrag();
+  if (dropOn(dd, e.target)) e.preventDefault();
+});
+
+// touch: hold ~250ms to pick a card/item up (a quick swipe still scrolls), drag a ghost, lift to drop.
+// On phones, hovering the tab bar while dragging switches tabs so items can reach the lineup.
+// Move/end listeners go on the touched node itself: touch events keep targeting it even after a board re-render
+// (bot turns re-render often) detaches it, and a detached node's events never bubble to document.
+const touchDrag = { timer: 0, src: null, x: 0, y: 0, active: false, ghost: null, tabTimer: 0, tabKey: null, node: null, raf: 0 };
+function touchReset() {
+  clearInterval(touchDrag.raf);
+  clearTimeout(touchDrag.timer); clearTimeout(touchDrag.tabTimer);
+  if (touchDrag.ghost) touchDrag.ghost.remove();
+  if (touchDrag.active) endDrag();
+  const n = touchDrag.node;
+  if (n) { n.removeEventListener('touchmove', onTouchMove); n.removeEventListener('touchend', onTouchEnd); n.removeEventListener('touchcancel', touchReset); }
+  Object.assign(touchDrag, { timer: 0, src: null, active: false, ghost: null, tabTimer: 0, tabKey: null, node: null, raf: 0 });
+}
+document.addEventListener('touchstart', e => {
+  touchReset();
+  if (e.touches.length !== 1 || document.body.classList.contains('in-duel')) return;
+  const d = dragFrom(e.target); if (!d) return;
+  const t = e.touches[0], n = e.target; Object.assign(touchDrag, { src: d, x: t.clientX, y: t.clientY, node: n });
+  n.addEventListener('touchmove', onTouchMove, { passive: false }); n.addEventListener('touchend', onTouchEnd, { passive: false }); n.addEventListener('touchcancel', touchReset);
+  touchDrag.timer = setTimeout(() => {
+    touchDrag.active = true; dragData = { t: d.t, u: d.u }; document.body.classList.add('dragging');
+    const r = d.el.getBoundingClientRect(), gh = d.el.cloneNode(true);
+    gh.classList.add('drag-ghost'); gh.removeAttribute('data-act'); gh.style.width = r.width + 'px';
+    touchDrag.ghost = gh; document.body.appendChild(gh); moveGhost(touchDrag.x, touchDrag.y);
+    if (navigator.vibrate) try { navigator.vibrate(12); } catch (_) { }
+    touchDrag.raf = setInterval(edgeScroll, 16);
+  }, 250);
+}, { passive: true });
+// the page can't scroll mid-drag, so holding near the top edge or just above the tab bar scrolls it
+function edgeScroll() {
+  if (!touchDrag.active) return;
+  const bar = document.querySelector('.mtabs'), bottom = bar && getComputedStyle(bar).display !== 'none' ? bar.getBoundingClientRect().top : innerHeight, y = touchDrag.y, EDGE = 70;
+  const v = y < EDGE ? -(EDGE - y) / 5 : (y > bottom - EDGE && y < bottom) ? (y - (bottom - EDGE)) / 5 : 0;
+  if (v) { const before = scrollY; window.scrollBy(0, v); if (scrollY !== before) { const el = document.elementFromPoint(touchDrag.x, y); markOver(el && el.closest(DROP_ZONES)); } }
+}
+function moveGhost(x, y) { const gh = touchDrag.ghost; if (gh) gh.style.transform = `translate(${x - gh.offsetWidth / 2}px, ${y - gh.offsetHeight * 0.6}px) scale(.85)`; }
+function onTouchMove(e) {
+  if (!touchDrag.src) return;
+  const t = e.touches[0];
+  if (!touchDrag.active) {
+    // moved before the hold finished: it's a scroll, let the browser have it
+    if (Math.hypot(t.clientX - touchDrag.x, t.clientY - touchDrag.y) > 10) touchReset();
     return;
   }
-  const slot = e.target.closest('[data-zone="line"]'), bench = e.target.closest('[data-zone="bench"]'), lend = e.target.closest('[data-zone="line-end"]');
-  if (slot) { e.preventDefault(); toLine(dd.u, +slot.dataset.pos); }
-  else if (bench) { e.preventDefault(); toBench(dd.u); }
-  else if (lend) { e.preventDefault(); toLine(dd.u); }
-  else return;
-  UI.renderBoard(); saveGame();
-});
+  e.preventDefault(); touchDrag.x = t.clientX; touchDrag.y = t.clientY; moveGhost(t.clientX, t.clientY);
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const tab = el && el.closest('.mtab');
+  if (tab) {
+    markOver(tab);
+    if (touchDrag.tabKey !== tab.dataset.tab) {
+      clearTimeout(touchDrag.tabTimer); touchDrag.tabKey = tab.dataset.tab;
+      touchDrag.tabTimer = setTimeout(() => { if (S.mtab !== touchDrag.tabKey) { S.mtab = touchDrag.tabKey; window.scrollTo(0, 0); UI.renderBoard(); } }, 350);
+    }
+    return;
+  }
+  clearTimeout(touchDrag.tabTimer); touchDrag.tabKey = null;
+  markOver(el && el.closest(DROP_ZONES));
+}
+function onTouchEnd(e) {
+  if (!touchDrag.active) { touchReset(); return; }
+  e.preventDefault(); // no click after a drag
+  const dd = dragData, el = document.elementFromPoint(touchDrag.x, touchDrag.y);
+  touchReset();
+  if (el && !el.closest('.mtab')) dropOn(dd, el);
+}
 
 // ---------- boot ----------
 UI.initTip();

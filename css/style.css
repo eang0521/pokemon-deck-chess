@@ -177,6 +177,9 @@ h4{font-size:12px;color:var(--mut);margin:10px 0 6px;text-transform:uppercase;le
 .held{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow:auto}.held-row{display:grid;grid-template-columns:32px 1fr auto;gap:8px;align-items:center;font-size:12px;background:#111b30;border-radius:8px;padding:5px 7px}
 .pickrow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.pickc{display:flex;flex-direction:column;gap:10px}.pickc .detail{flex:1;border:1px solid #2f4170}
 .mtabs{display:none}
+.drag-ghost{position:fixed;left:0;top:0;z-index:400;pointer-events:none;opacity:.9;box-shadow:0 10px 26px rgba(0,0,0,.6);transform-origin:center}
+[draggable="true"]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.mtab.over{background:#2a3d66;outline:2px dashed var(--accent)}
 .pickgift{display:flex;flex-direction:column;gap:4px}.pickgift small{text-transform:uppercase;letter-spacing:.06em;font-size:10px}
 .rtab{width:100%;border-collapse:collapse;margin:6px 0}.rtab td,.rtab th{padding:5px 6px;border-bottom:1px solid #243558;text-align:left}.rtab th{color:var(--mut);font-size:11px;text-transform:uppercase}
 .rtab tr.you td{background:#25314f}.rtab .vs{color:var(--mut);text-align:center;width:24px}.rtab .wn{font-weight:800;color:var(--ok)}.rtab .ls{color:var(--mut)}.rtab .up{color:var(--ok)}.rtab .dn{color:var(--bad)}
@@ -256,6 +259,8 @@ body.in-duel #toast-root{display:none}
 .t-stats{grid-template-columns:repeat(3,auto);gap:0 4px}.t-stats .stat{font-size:10px}
 .irow{grid-template-columns:1fr}
 .cols{padding-bottom:72px}
+.title{grid-template-columns:minmax(0,1fr);padding:12px}.t-card{padding:20px 16px}
+.t-card.end .rtab th:nth-child(6),.t-card.end .rtab td:nth-child(6){display:none}
 .cols[data-mtab="shop"] .mine,.cols[data-mtab="shop"] .side,
 .cols[data-mtab="lineup"] .colshop,.cols[data-mtab="lineup"] .inv,.cols[data-mtab="lineup"] .side,
 .cols[data-mtab="items"] .colshop,.cols[data-mtab="items"] .lineup,.cols[data-mtab="items"] .bench,.cols[data-mtab="items"] .side,
@@ -268,7 +273,9 @@ body.in-duel #toast-root{display:none}
 .mtab.turn small{color:#2a1a00;background:var(--accent);border-radius:8px;padding:0 6px}
 .mtab.has small{color:var(--text)}
 #toast-root{padding-bottom:78px}
-.tolineup{opacity:1;width:28px;height:26px}
+.tolineup{opacity:1;width:34px;height:32px;font-size:15px}
+.lctl{position:static;margin-top:4px}.lctl button{min-height:34px;min-width:38px;font-size:15px}.lineup-btns .btn{padding:8px 12px}
+#toast-root .toast{font-size:13px;max-width:calc(100vw - 32px)}#toast-root .toast:not(:nth-last-child(-n+2)){display:none}
 .duel{grid-template-rows:auto auto 200px;overflow-y:auto;padding:8px;gap:8px}
 .d-title{font-size:14px}.d-ctl{flex-wrap:wrap;gap:6px}
 .arena{grid-template-columns:1fr 1fr;gap:8px;min-height:auto}.aside{max-height:220px;padding:6px}
