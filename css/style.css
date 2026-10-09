@@ -243,3 +243,23 @@ body.in-duel #toast-root{display:none}
 .next-opp{color:var(--mut);font-size:11px}
 .lineup-btns{float:right;display:flex;gap:6px}
 .lineup-btns .btn{padding:3px 10px;font-size:12px;box-shadow:none}
+/* phones (iPhone SE and similar): stack shop tiles vertically and tighten the top bar */
+@media (max-width:480px){
+.topbar{gap:6px 12px;padding:6px 10px}.tb-phase{min-width:0;flex-basis:100%}.tb-stats{gap:10px;flex-wrap:wrap}.tb-stat{font-size:15px;min-width:0}
+.btn.xp{white-space:nowrap}
+.cols{padding:8px;gap:8px}.panel,.shop{padding:8px}
+.trow{gap:4px}.tlabel{width:22px}.tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.tile{grid-template-columns:1fr;grid-template-rows:auto;padding:5px 4px 4px;min-height:0;gap:2px}
+.t-por{grid-row:auto;justify-content:center}.t-por .por{width:40px;height:40px}
+.t-name{font-size:12px}.t-pow{display:none}.t-foot{grid-column:1}
+.t-stats{grid-template-columns:repeat(3,auto);gap:0 4px}.t-stats .stat{font-size:10px}
+.irow{grid-template-columns:1fr}
+.duel{grid-template-rows:auto auto 200px;overflow-y:auto;padding:8px;gap:8px}
+.d-title{font-size:14px}.d-ctl{flex-wrap:wrap;gap:6px}
+.arena{grid-template-columns:1fr 1fr;gap:8px;min-height:auto}.aside{max-height:220px;padding:6px}
+.center{min-height:auto;grid-column:1/-1;order:-1;grid-template-columns:1fr 1fr;gap:8px;align-items:stretch}.vs{grid-column:1/-1;order:3}
+.fighter{min-height:0;padding:10px 6px;gap:5px;min-width:0}.f-name{font-size:14px;flex-wrap:wrap;justify-content:center}.f-por{padding:6px}.f-por .por{width:64px;height:64px}
+.f-stats{flex-wrap:wrap;justify-content:center}
+.fighter.lunge.mine{animation:none}.fighter.lunge.foe{animation:none}
+.d-end{position:fixed}.d-end h2{font-size:40px}
+}

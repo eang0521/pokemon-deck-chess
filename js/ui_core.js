@@ -153,8 +153,11 @@ UI.tipHtml = function (code) {
   return '';
 };
 UI.initTip = function () {
-  let cur = null;
+  let cur = null, touchedAt = 0;
+  // taps fire mouseover too, and on a phone the tooltip would then stick over the board: skip it for touch
+  document.addEventListener('touchstart', () => { touchedAt = Date.now(); cur = null; tip().hidden = true; }, { passive: true });
   document.addEventListener('mouseover', e => {
+    if (Date.now() - touchedAt < 1000) return;
     const el = e.target.closest && e.target.closest('[data-tip]');
     if (!el || el === cur) { if (!el) { cur = null; tip().hidden = true; } return; }
     cur = el; const html = UI.tipHtml(el.dataset.tip); if (!html) { tip().hidden = true; return; }

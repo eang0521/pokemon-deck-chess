@@ -42,6 +42,7 @@ class Game {
     this.row = { I: [null, null, null], II: [null, null, null], III: [null, null, null], IV: [null, null, null], V: [null, null, null] };
     for (const t of TIERS) for (let i = 0; i < 3; i++) this.row[t][i] = this.draw(t);
     this.irow = [null, null, null, null];
+    this.discard = { cards: [], items: [] }; // out of play for the rest of the game
     for (let i = 0; i < 4; i++) this.irow[i] = this.idraw();
     this.players = [];
     const defs = opts.players || [];
@@ -196,7 +197,7 @@ class Game {
   finishPick(p, c) {
     if (this.pickEvent.key === 'starter') {
       const gifts = p.dealItems || [], gift = gifts[p.deal.indexOf(c)];
-      p.deal.forEach((d, i) => { if (d !== c) { this.returnCard(d, null); if (gifts[i]) this.returnItem(gifts[i]); } });
+      p.deal.forEach((d, i) => { if (d !== c) { this.discard.cards.push(d); if (gifts[i]) this.discard.items.push(gifts[i]); } });
       p.deal = null; p.dealItems = null; this.addCard(p, c);
       if (gift) p.inv.push(gift);
       this.say(`${p.name} starts with ${c.spec.name}${gift ? ' + ' + ITEMS[gift.key].name : ''}`, 'pick');
@@ -406,7 +407,7 @@ Game.prototype.serialize = function () {
   const lists = o => { const r = {}; for (const k in o) r[k] = o[k].map(addCard); return r; };
   const data = { v: 1, seed: this.seed, rng: this.rng.getState(), uid: this.uid, round: this.round, phase: this.phase, human: this.human, log: this.log.slice(-120),
     players: pl, deck: lists(this.deck), picks: lists(this.picks), hatch: lists(this.hatch), row: Object.fromEntries(Object.keys(this.row).map(t => [t, this.row[t].map(addCard)])),
-    irow: this.irow.map(addItem), ideck: this.ideck.map(addItem), pickEvent: this.pickEvent || null,
+    irow: this.irow.map(addItem), ideck: this.ideck.map(addItem), discard: { cards: this.discard.cards.map(addCard), items: this.discard.items.map(addItem) }, pickEvent: this.pickEvent || null,
     shop: this.shop ? { order: this.shop.order.map(p => p.idx), pos: this.shop.pos, acted: this.shop.acted, sweeps: this.shop.sweeps } : null,
     pendingPick: this.pendingPick ? this.pendingPick.map(c => c.uid) : null };
   data.cards = Array.from(cards.values()); data.items = Array.from(items.values());
@@ -422,6 +423,7 @@ Game.deserialize = function (d) {
   g.deck = lists(d.deck); g.picks = lists(d.picks); g.hatch = lists(d.hatch);
   g.row = {}; for (const t in d.row) g.row[t] = d.row[t].map(C);
   g.irow = d.irow.map(I); g.ideck = d.ideck.map(I);
+  g.discard = d.discard ? { cards: d.discard.cards.map(C), items: d.discard.items.map(I) } : { cards: [], items: [] };
   g.players = d.players.map(p => Object.assign({}, p, { cards: p.cards.map(C), inv: p.inv.map(I), deal: p.deal ? p.deal.map(C) : null, dealItems: p.dealItems ? p.dealItems.map(I) : null }));
   g.pickEvent = d.pickEvent;
   g.shop = d.shop ? { order: d.shop.order.map(i => g.players[i]), pos: d.shop.pos, acted: d.shop.acted, sweeps: d.shop.sweeps, humanDone: false } : null;

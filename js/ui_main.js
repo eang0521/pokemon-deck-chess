@@ -96,7 +96,7 @@ function showPick() {
   const g = S.g, deal = g.pendingPick || me().deal; const ev = g.pickEvent;
   const starter = ev.key === 'starter', gifts = me().dealItems || [];
   const cards = deal.map((c, i) => `<div class="pickc">${UI.cardDetail(c.spec, c)}${starter && gifts[i] ? `<div class="pickgift"><small>Comes with (unattached)</small>${UI.itemTile(gifts[i], { noPrice: true })}</div>` : ''}<button class="btn big" data-act="do-pick" data-uid="${c.uid}">Take ${UI.esc(c.spec.name)}</button></div>`).join('');
-  const blurb = starter ? 'Choose your starting Pokémon. Each comes with a Tier I item that goes to your Items panel, ready to give to any Pokémon. The other two go back to the decks.'
+  const blurb = starter ? 'Choose your starting Pokémon. Each comes with a Tier I item that goes to your Items panel, ready to give to any Pokémon. The other two (and their items) go to the discard pile.'
     : 'Three cards were dealt to you. Keep one; the others go to the bottom of the pool. It joins your bench (or lineup if there is room).';
   UI.modal(`<h2>${starter ? 'Choose your starter' : UI.esc(ev.label) + ' pick'}</h2><p class="muted">${blurb}</p><div class="pickrow">${cards}</div>`, { locked: true, closable: false, cls: 'wide' });
 }
@@ -319,7 +319,7 @@ function showRules() {
     <p><b>The shop.</b> Players take turns, worst score first, one action each: buy a card or item, evolve, churn (1 gold) or pass. It repeats until everybody passes. Tier II opens at level 3, III at 4, IV at 5, V at 6. Buying XP (4 gold = 4 XP), moving cards and giving items are free and don't use your turn.</p>
     <p><b>Level and lineup.</b> Level 3 needs 2 XP total, then 6, 14, 30, 56 (levels 4–7). Your lineup holds as many Pokémon as your level. Order matters: your first Pokémon starts the fight and the next one enters when one is knocked out.</p>
     <p><b>Trade-in.</b> You never sell for gold. Instead trade cards or items in as payment: trade-in value I 0, II 2, III 4, IV 7, V 14, Unique 15, Legendary 30. <b>Evolve</b> only if the evolved card is face up in the shop: your old card counts at its full price.</p>
-    <p><b>Picks.</b> Before round 1 everyone chooses 1 of 3 Tier I starters, each with a free Tier I item (never a gem: gems can't be held). Before rounds 2, 5 and 8 you pick 1 of 3 Additional cards (Tier II/III/IV); before round 6 a Unique; before round 9 a Legendary.</p>
+    <p><b>Picks.</b> Before round 1 everyone chooses 1 of 3 Tier I starters, each with a free Tier I item (never a gem: gems can't be held); the ones nobody takes are discarded. Before rounds 2, 5 and 8 you pick 1 of 3 Additional cards (Tier II/III/IV); before round 6 a Unique; before round 9 a Legendary.</p>
     <p><b>Duels.</b> Each Pokémon attacks, gains 1 charge, and casts its charge power when its charge reaches PP. A faster foe pushes the initiative bar; synergies activate from your whole lineup and stay fixed. Hover any card for details. 5 crit tokens = one ×2 crit.</p>
     <p><b>Baby synergy.</b> After you lose a duel with Baby level I/II/III you hatch a Tier II/III/IV Hatch card.</p>
     <p class="muted">Shortcuts: P pass · X buy XP · Esc close dialogs.</p></div>`, { cls: 'wide' });
