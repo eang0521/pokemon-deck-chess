@@ -215,7 +215,7 @@ h4{font-size:12px;color:var(--mut);margin:10px 0 6px;text-transform:uppercase;le
 .f-pp{display:flex;gap:4px;align-items:center}.f-pp i{width:14px;height:14px;border-radius:50%;border:2px solid #6c58b8;background:transparent}.f-pp i.on{background:#a98bff;box-shadow:0 0 8px #a98bff}.f-pp span{font-size:11px;color:var(--mut);margin-left:6px}
 .f-stats{display:flex;gap:4px}.f-st{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;min-height:22px}
 .stc{border:1px solid var(--c);color:var(--c);border-radius:11px;padding:0 8px;font-size:10px;font-weight:800;letter-spacing:.04em}
-.f-items{display:flex;gap:4px}
+.f-items{display:flex;gap:4px}.f-gems{display:flex;gap:3px;align-items:center;flex-wrap:wrap;justify-content:center;min-height:0}.f-gems small{width:100%;text-align:center;color:var(--mut);font-size:10px;letter-spacing:.06em;text-transform:uppercase}.f-gems .itm{width:22px;height:22px}
 .vs{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--mut)}
 .ini{position:relative;width:100%;height:14px;background:#0a1120;border:1px solid var(--line);border-radius:8px}.ini .z{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:#55679c}.ini i{position:absolute;top:1px;bottom:1px;width:12px;margin-left:-6px;background:var(--accent);border-radius:6px;left:50%;transition:left .4s}
 .next{font-size:11px;text-align:center}.turnno{font-size:12px}

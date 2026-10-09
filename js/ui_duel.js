@@ -29,6 +29,7 @@ UI.playDuel = function (replay, opts) {
       <div class="f-stats" id="f-stats-${k}"></div>
       <div class="f-st" id="f-st-${k}"></div>
       <div class="f-items" id="f-it-${k}"></div>
+      <div class="f-gems" id="f-gem-${k}"></div>
       <div class="floaters" id="f-fl-${k}"></div>
       <div class="castbanner" id="f-cast-${k}"></div>
     </div>`;
@@ -55,7 +56,10 @@ UI.playDuel = function (replay, opts) {
       <div class="d-end" id="d-end" hidden></div>`;
     document.body.appendChild(el); document.body.classList.add('in-duel');
     const $ = id => el.querySelector('#' + id);
-    const snaps = replay.snaps; let idx = -1, playing = true, speed = opts.speed || 1, timer = null, done = false;
+    const snaps = replay.snaps;
+    // unholdable items (gems, Red Scale) are folded onto the opener by the engine; show them beside the lineup instead
+    const isBeside = key => !!(ITEMS[key] && ITEMS[key].flags && ITEMS[key].flags.unholdable);
+    const besideKeys = [0, 1].map(k => { const a0 = snaps.length ? snapSide(snaps[0], k).act : null; return a0 ? a0.items.filter(isBeside) : []; }); let idx = -1, playing = true, speed = opts.speed || 1, timer = null, done = false;
     const lastActive = [null, null];
     const prevState = [null, null];
 
@@ -68,7 +72,8 @@ UI.playDuel = function (replay, opts) {
         $('f-name-' + k).textContent = card.name;
         $('f-types-' + k).innerHTML = card.types.map(t => UI.typeIcon(t, 16)).join('');
         $('f-por-' + k).innerHTML = UI.portrait(card.spec, 'huge');
-        $('f-it-' + k).innerHTML = a.items.map(key => `<span data-tip="item:${key}">${UI.itemImg(key)}</span>`).join('');
+        $('f-gem-' + k).innerHTML = besideKeys[k].length ? '<small>Beside lineup</small>' + besideKeys[k].map(key => `<span data-tip="item:${key}">${UI.itemImg(key)}</span>`).join('') : '';
+        $('f-it-' + k).innerHTML = a.items.filter(key => !isBeside(key)).map(key => `<span data-tip="item:${key}">${UI.itemImg(key)}</span>`).join('');
         if (animate) { const f = $('f-' + k); f.classList.remove('enter'); void f.offsetWidth; f.classList.add('enter'); }
         lastActive[k] = a.i; prevState[k] = null;
       }

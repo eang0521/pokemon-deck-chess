@@ -51,7 +51,7 @@ UI.itemImg = (key, cls) => `<img class="itm ${cls || ''}" src="assets/i/${key}.p
 // ---------- cards ----------
 function costBadge(spec) {
   if (spec.pool === 'hatch') return `<span class="cost" title="Hatch cards cannot be bought; trade-in value ${spec.trade}">— (${spec.trade})</span>`;
-  if (spec.pool === 'unique' || spec.pool === 'legendary') return `<span class="cost" title="Picked, not bought. Trade-in value ${spec.trade}">pick (${spec.trade})</span>`;
+  if (spec.pool === 'unique' || spec.pool === 'legendary') return `<span class="cost" title="Picked, not bought. Trade-in value ${spec.trade}">— (${spec.trade})</span>`;
   return `<span class="cost" title="Price (trade-in value)">${UI.coin(spec.price)} <i>(${spec.trade})</i></span>`;
 }
 UI.costBadge = costBadge;

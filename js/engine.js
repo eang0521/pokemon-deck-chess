@@ -16,8 +16,8 @@ function counter(init) {
   return new Proxy(Object.assign({}, init || {}), { get(t, k) { if (typeof k === 'symbol') return t[k]; return (k in t) ? t[k] : 0; } });
 }
 const empty = o => Object.keys(o).length === 0;
-const NEG = ['burn', 'poison', 'para', 'flinch', 'sleep', 'freeze', 'confuse', 'charm', 'wound', 'armor', 'fatigue'];
-const STN = { para: 'PARALYZED', armor: 'ARMOR BROKEN', fatigue: 'FATIGUED', flinch: 'FLINCHED', confuse: 'CONFUSED', charm: 'CHARMED', wound: 'WOUNDED', burn: 'BURNED', sleep: 'ASLEEP', freeze: 'FROZEN' };
+const NEG = ['burn', 'poison', 'para', 'flinch', 'sleep', 'freeze', 'confuse', 'charm', 'wound', 'armor', 'fatigue', 'locked'];
+const STN = { para: 'PARALYZED', armor: 'ARMOR BROKEN', fatigue: 'FATIGUED', flinch: 'FLINCHED', confuse: 'CONFUSED', charm: 'CHARMED', wound: 'WOUNDED', burn: 'BURNED', sleep: 'ASLEEP', freeze: 'FROZEN', locked: 'LOCKED' };
 
 // ---------- RNG ----------
 function makeRng(seed) {
@@ -43,6 +43,13 @@ const HALF_ONLY = null;
 // ---------- Core powers ----------
 const s_ = (x, sp) => ['S', x, !!sp];
 const rep = (n, f) => { const o = []; for (let i = 0; i < n; i++) o.push(f(i)); return o; };
+// Tri Attack: status by the user's highest of FIRE / ELECTRIC / ICE synergy (ties: Fire > Electric > Ice; none -> burn)
+function triStatus(me) {
+  const cn = me.side.cnt || {}; const f = cn.FIRE || 0, e = cn.ELECTRIC || 0, i = cn.ICE || 0;
+  if (i > f && i > e) return ['st', 'foe', 'freeze', 1];
+  if (e > f && e >= i) return ['st', 'foe', 'para', 1];
+  return ['st', 'foe', 'burn', 2];
+}
 const PW = {
   ACCELEROCK: (v, c, me, foe) => [s_(PA(v[0], c.atk)), ['buff', 'spd', 1], ['buff', 'def', -1]],
   ACID_ARMOR: (v, c, me, foe) => [['buff', 'def', AT(v[0])], ['thorns', 2]],
@@ -70,9 +77,9 @@ const PW = {
   FIRESTARTER: (v, c, me, foe) => [['buff', 'spd', SP(v[0])], s_(D(v[1] * .8))],
   FLAMETHROWER: (v, c, me, foe) => [s_(D(v[0]), true), ['st', 'foe', 'burn', 3]],
   FLOWER_TRICK: (v, c, me, foe) => [['delay', 1, D(v[0])]],
-  FURY_SWIPES: (v, c, me, foe) => [['atk', Math.max(1, pyround(v[0] / 5))]],
+  FURY_SWIPES: (v, c, me, foe) => [['atk', (me.stars || 1) >= 4 ? 5 : 3]],
   FUTURE_SIGHT: (v, c, me, foe) => [['delay', 2, D(v[1] * 3)]],
-  GEAR_GRIND: (v, c, me, foe) => [s_(PA(v[0], c.spd)), s_(PA(v[0], c.spd))],
+  GEAR_GRIND: (v, c, me, foe) => [s_(PA(v[0], me.eff('spd') * 7)), s_(PA(v[0], me.eff('spd') * 7))],
   GIGATON_HAMMER: (v, c, me, foe) => [s_(D(v[0])), ['st', 'me', 'fatigue', 2]],
   GLAIVE_RUSH: (v, c, me, foe) => [['st', 'foe', 'armor', 2], ['st', 'me', 'armor', 2], s_(D(v[0]))],
   GROWL: (v, c, me, foe) => [['st', 'foe', 'flinch', 1], ['tmp', 'foe', 'atk', -AT(v[0]), 2]],
@@ -85,7 +92,7 @@ const PW = {
   HYDRO_PUMP: (v, c, me, foe) => [s_(D(v[0]), true)],
   ICE_BALL: (v, c, me, foe) => [['buff', 'sdef', 2], s_(D(v[0]) + PA(v[1], c.sdef))],
   ICICLE_CRASH: (v, c, me, foe) => [s_(D(v[0]), true)],
-  ICICLE_MISSILE: (v, c, me, foe) => rep(trunc(v[0]), () => s_(D(v[1] * 1.5))).concat(v[0] >= 3 ? [['st', 'foe', 'freeze', 1]] : []),
+  ICICLE_MISSILE: (v, c, me, foe) => rep(trunc(v[0]), () => s_(D(v[1] * 1.5))).concat([['st', 'foe', 'freeze', 1]]),
   ICY_WIND: (v, c, me, foe) => [s_(D(v[0]), true), ['tmp', 'foe', 'spd', -SP(v[1]), 2]],
   KING_SHIELD: (v, c, me, foe) => [['protect'], ['shield', D(v[0] * 2)]],
   KOWTOW_CLEAVE: (v, c, me, foe) => [s_(ceil(PA(150, c.atk) * 2)), ['T', me.side.fallen * Math.max(1, pyround(PA(150, c.atk) * v[0] / 100))]],
@@ -94,7 +101,7 @@ const PW = {
   LICK: (v, c, me, foe) => [s_(D(v[0])), ['st', 'foe', 'para', 1], ['st', 'foe', 'confuse', 1]],
   MAGICAL_LEAF: (v, c, me, foe) => [s_(D(v[0])), ['st', 'foe', 'armor', 1]],
   MAGIC_POWDER: (v, c, me, foe) => [['shield', D(v[0])], ['st', 'foe', 'flinch', S(v[1])]],
-  MAGNET_BOMB: (v, c, me, foe) => [s_(D(v[0] * 1.5), true), ['tmp', 'foe', 'spd', -1, 2]],
+  MAGNET_BOMB: (v, c, me, foe) => [s_(D(v[0] * 1.5), true), ['st', 'foe', 'locked', 1]],
   MANTIS_BLADES: (v, c, me, foe) => [['P', D(v[0])], s_(D(v[0])), ['T', D(v[0])]],
   METEOR_MASH: (v, c, me, foe) => rep(me.lv('PSYCHIC') ? 4 : 3, () => s_(PA(v[0], c.atk))).concat([['buff', 'atk', 1]]),
   MYSTICAL_FIRE: (v, c, me, foe) => [s_(D(v[0])), ['ap_foe', -1]],
@@ -113,14 +120,14 @@ const PW = {
   SALT_CURE: (v, c, me, foe) => [['shield', D(v[0])], ['cure']].concat(['WATER', 'STEEL', 'GHOST'].some(t => foe.types.has(t)) ? [['st', 'foe', 'burn', 3]] : []),
   SHADOW_BALL: (v, c, me, foe) => [s_(D(v[0])), ['tmp', 'foe', 'sdef', -1, 99]],
   SHOCKWAVE: (v, c, me, foe) => [s_(D(v[0]), true)],
-  SILVER_WIND: (v, c, me, foe) => [s_(D(v[0])), ['buff', 'atk', 1], ['buff', 'spd', 1]],
+  SILVER_WIND: (v, c, me, foe) => [s_(D(v[0])), ['buff', 'atk', 1], ['buff', 'spd', 1], ['buff', 'def', 1], ['buff', 'sdef', 1]],
   SING: (v, c, me, foe) => [['st', 'foe', 'sleep', S(v[1])]],
   SLASH: (v, c, me, foe) => [s_(ceil(D(v[0]) * 2))],
-  SNIPE_SHOT: (v, c, me, foe) => [['Sp', D(v[0])]],
+  SNIPE_SHOT: (v, c, me, foe) => [s_(D(v[0]), true)],
   SOAK: (v, c, me, foe) => [s_(D(v[0])), ['carry', 'charge', 1]],
   SOFT_BOILED: (v, c, me, foe) => [['cure'], ['shield', D(v[0])], ['carry', 'shield', ceil(D(v[0]) / 2)]],
   SPIKY_SHIELD: (v, c, me, foe) => [['spiky', S(v[0]), PA(v[1], c.defn)]],
-  STEAMROLLER: (v, c, me, foe) => [s_(PA(v[0] * .75, c.spd))],
+  STEAMROLLER: (v, c, me, foe) => [s_(PA(v[0] * .75, c.spd))].concat(me.eff('spd') > foe.eff('spd') ? [['st', 'foe', 'flinch', 1]] : []),
   STORED_POWER: (v, c, me, foe) => [s_(D(v[0]) + me.boosts)],
   STRING_SHOT: (v, c, me, foe) => [s_(D(v[0])), ['st', 'foe', 'para', 2]],
   TELEPORT: (v, c, me, foe) => [['nextatk', D(v[0])]],
@@ -130,11 +137,11 @@ const PW = {
   TICKLE: (v, c, me, foe) => [['tmp', 'foe', 'atk', -1, 2], ['tmp', 'foe', 'def', -1, 2]],
   TORCH_SONG: (v, c, me, foe) => rep(4, () => s_(PA(50, c.atk))).concat([['st', 'foe', 'burn', 3], ['buff', 'ap', trunc(v[2])]]),
   TRANSE: (v, c, me, foe) => [['heal', Math.max(1, pyround(.5 * me.maxhp))]],
-  TRI_ATTACK: (v, c, me, foe) => [s_(D(v[0] * .8)), ['st', 'foe', 'burn', 3]],
+  TRI_ATTACK: (v, c, me, foe) => [s_(D(v[0] * .8)), triStatus(me)],
   TROP_KICK: (v, c, me, foe) => [s_(D(v[0])), ['tmp', 'foe', 'atk', -AT(v[1]), 2]],
   TWISTER: (v, c, me, foe) => [s_(D(v[0]), true)],
-  UPROAR: (v, c, me, foe) => [s_(D(v[0] * 3))],
-  VOLT_SWITCH: (v, c, me, foe) => [['Sp', D(v[0])]],
+  UPROAR: (v, c, me, foe) => [s_(D(v[0])), ['delay', 2, D(v[0]), 1], ['delay', 3, D(v[0]), 1]],
+  VOLT_SWITCH: (v, c, me, foe) => [s_(D(v[0]), true)],
   WAVE_SPLASH: (v, c, me, foe) => [['shield', Math.max(1, pyround(v[0] / 100 * c.hpc))], s_(Math.max(1, pyround(v[0] / 100 * c.hpc)))],
   WHEEL_OF_FIRE: (v, c, me, foe) => [s_(D(v[0])), s_(D(v[0]))],
   WHIRLPOOL: (v, c, me, foe) => rep(4, () => s_(PA(v[0], c.atk))),
@@ -150,26 +157,38 @@ function opsfn(parts) {
       if (k === 'S' || k === 'T' || k === 'P') {
         let x = p[1]; const cond = p.length > 3 ? p[3] : null;
         if (cond) {
-          const ok = { shield: foe.shield > 0, neg: foe.neg(), sdef0: foe.eff('sdef') === 0, low: me.hp * 2 < me.maxhp }[cond[0]];
+          const ok = { shield: foe.shield > 0, neg: foe.neg(), sdef0: foe.eff('sdef') === 0, low: me.hp * 2 < me.maxhp, poison: foe.st.poison > 0 }[cond[0]];
           if (ok) x *= 2;
         }
         ops.push(k === 'S' ? [k, x, p[2]] : [k, x]);
       } else if (k === 'dyn') {
-        const x = p[1] === 'tgtmax' ? (p[2] >= 100 ? Math.max(1, pyround(foe.maxhp * p[2] / 100)) : 1) : 1;
+        const x = p[1] === 'tgtmax' ? (p[2] >= 100 ? Math.max(1, pyround(foe.maxhp * p[2] / 100)) : 1)
+          : p[1] === 'top3' ? Math.max(1, p[2] * Object.values(me.side.cnt).sort((a, b) => b - a).slice(0, 3).reduce((a, b) => a + b, 0)) : 1;
         ops.push(p[3] === 'S' ? ['S', x, false] : [p[3], x]);
       } else if (k === 'drain') ops.push(['drain', p[1], p[2]]);
       else if (k === 'delay') ops.push(['delay', p[1], p[2]]);
       else if (k === 'st') ops.push(['st', p[1], p[2], p[3]]);
       else if (k === 'buff') ops.push(['buff', p[1], p[2]]);
       else if (k === 'tmp') ops.push(['tmp', 'foe', p[1], -p[2], p[3]]);
-      else if (k === 'shield') ops.push(['shield', p[1]]);
+      else if (k === 'shield') {
+        const cnd = p.length > 2 ? p[2] : null;
+        if (cnd === 'para') { if (foe.st.para > 0) ops.push(['shield', p[1]]); }
+        else if (cnd === 'burned') { /* handled with the foecharge part */ }
+        else ops.push(['shield', p[1]]);
+      } else if (k === 'koif') ops.push(['koif', p[1], p[2]]);
       else if (k === 'heal') ops.push(['heal', p[1]]);
       else if (k === 'protect') ops.push(['protect']);
       else if (k === 'cure') ops.push(['cure']);
       else if (k === 'carry') ops.push(['carry', p[1], p[2]]);
       else if (k === 'gcharge') ops.push(['gcharge', p[1]]);
       else if (k === 'mhp') ops.push(['mhp', p[1]]);
-      else if (k === 'foecharge') ops.push(['foecharge', p[1]]);
+      else if (k === 'foecharge') {
+        if (parts.some(q => q[0] === 'shield' && q.length > 2 && q[2] === 'burned')) {
+          const n = Math.min(-p[1], Math.max(0, foe.charge || 0));
+          if (n > 0) ops.push(['shield', n]);
+        }
+        ops.push(['foecharge', p[1]]);
+      }
       else if (k === 'kocharge') ops.push(['kocharge', p[1]]);
       else if (k === 'selfhurt') {
         const x = p[1] === 'same' ? ops.filter(o => o[0] === 'S' || o[0] === 'T' || o[0] === 'P').reduce((a, o) => a + o[1], 0) : p[1] === 'pct' ? pyround(me.maxhp * p[2] / 100) : p[2];
@@ -234,12 +253,13 @@ class BCard {
     this.base = { atk: this.atk0, defn: this.def0, sdef: this.sdef0, spd: this.spd0, ap: 0 };
     this.casts = 0; this.dealt = 0; this.kos = 0; this.accel = 0; this.sf = 0;
     this.fl = counter(); this.itst = counter(); this.itn = counter(); this.critacc = 0; this.critpct = 0;
-    this.imm = new Set(); this.immturn = 0; this.berry_used = false; this.revived = false; this.dodge_n = 0; this.absorbed = 0; this.owed = 0;
+    this.imm = new Set(); this.immturn = 0; this.berry_used = false; this.revived = false; this.rhalf = false; this.dodge_n = 0; this.absorbed = 0; this.owed = 0;
     this.cover_used = false; this.bulb_used = false; this.charm_used = false; this.smoke_used = false; this.shtot = 0; this.expl_used = false;
     this.cursed = new Set(); this.dish = {}; this.dodge_n2 = 0; this.items_eff = []; this.elixir_used = false; this.surf_used = false; this.healboost = 0;
     this.berries = [];
   }
-  neg() { for (const k of NEG) if (this.st[k] > 0) return true; return false; }
+  orbBurn() { return !!this.fl.flameorb && !(this.fl.immune_neg || this.pas === 'komala'); }   // Flame Orb: the holder is permanently BURNED
+  neg() { for (const k of NEG) if (this.st[k] > 0) return true; return this.orbBurn(); }
   lv(t) { return this.syn[t] || 0; }
   eff(stat) {
     const key = stat === 'def' ? 'defn' : stat;
@@ -297,8 +317,7 @@ class Duel {
       let out = [];
       for (const k of c.items) {
         const fl = ITEMS[k].flags;
-        if (fl.wonder) out = out.concat(this.rng.sample(CRAFT.filter(x => !c.items.includes(x)), fl.wonder));
-        else if (fl.chef) out = out.concat([this.rng.choice(FOODS), k]);
+        if (fl.chef) out = out.concat([this.rng.choice(FOODS), k]);
         else out.push(k);
       }
       c.items_eff = out;
@@ -339,7 +358,6 @@ class Duel {
     if (f.egg) for (const k of ['atk', 'defn', 'sdef']) if (c.base[k] > 0) c.perm[k] += ceil(c.base[k] * .5);
     if (f.swarm) c.swarm += trunc(f.swarm);
     if (f.abshield) { c.shield += 3; c.immturn = 3; }
-    if (f.starpiece && c.spec.vs) c.v = c.spec.vs[Math.min(c.stars + 1, 3) - 1];
     if (f.expshare) {
       const others = sd.fielded.filter(x => x !== c).concat(sd.lineup);
       if (others.length) {
@@ -605,7 +623,7 @@ class Duel {
     if (card.perm.dprotect) card.protect = true;
     const cr = side.carry;
     card.charge += cr.charge; card.shield += cr.shield; card.perm.spd += cr.spd;
-    card.perm.defn += cr.def; card.perm.atk += cr.atk;
+    card.perm.defn += cr.def; card.perm.atk += cr.atk; card.rhalf = cr.revive > 0;
     this.heal(card, cr.heal); card.maxhp += cr.maxhp; card.hp += cr.maxhp;
     side.carry = counter();
     this.item_enter(side, card);
@@ -637,11 +655,13 @@ class Duel {
     basic = !!basic; ignore_def = !!ignore_def;
     if (amount <= 0 || dst.hp <= 0) return 0;
     if (dst.fl.doll && (kind === 'P' || kind === 'S')) amount = Math.max(1, amount - 1);
-    if (basic && dst.fl.dodge) {
+    const lk = dst.st.locked > 0;      // LOCKED: this hit ignores Fly Away, dodge and evade; the lock is then used up
+    if (lk) dst.st.locked = 0;
+    if (basic && dst.fl.dodge && !lk) {
       dst.dodge_n += 1;
       if (dst.dodge_n % trunc(dst.fl.dodge) === 0) { this.say(`${dst.name} dodges`); return 0; }
     }
-    if (basic && dst.dish.dodge) {
+    if (basic && dst.dish.dodge && !lk) {
       dst.dodge_n2 += 1;
       if (dst.dodge_n2 % dst.dish.dodge === 0) { this.say(`${dst.name} dodges`); return 0; }
     }
@@ -654,7 +674,7 @@ class Duel {
     }
     if (basic && dst.lv('GHOST')) {
       dst.hits_in += 1;
-      if (dst.hits_in % 4 === 0 && dst.lv('GHOST') >= 1) {
+      if (dst.hits_in % 4 === 0 && dst.lv('GHOST') >= 1 && !lk) {
         this.say(`${dst.name} evades`);
         if (dst.lv('GHOST') >= 4) this.hit(dst, src, 1, 'T');
         return 0;
@@ -699,7 +719,7 @@ class Duel {
         dst.shield += [2, 4, 6][l - 1]; dst.perm.atk += (l < 3 ? 1 : 2);
       }
       if (dst.lv('WILD') === 4 && !dst.fl.berserk && dst.hp * 2 <= dst.maxhp) { dst.fl.berserk = 1; dst.perm.atk += 2; dst.perm.spd += 2; dst.shield += 3; }
-      if (dst.lv('FLYING') && dst.fly_used < [1, 1, 2, 3][dst.lv('FLYING') - 1] && dst.hp * 2 <= dst.maxhp) {
+      if (dst.lv('FLYING') && !lk && dst.fly_used < [1, 1, 2, 3][dst.lv('FLYING') - 1] && dst.hp * 2 <= dst.maxhp) {
         dst.fly_used += 1; dst.protect = true;
         if (dst.fly_used === 1) dst.perm.spd += 1;
         if (dst.lv('FLYING') >= 2) dst.perm.sdef += 1;
@@ -768,7 +788,8 @@ class Duel {
   // ----- casting -----
   cast(me, foe) {
     me.casts += 1; me.charge = 0;
-    const ops = powerOf(me)(me.v, me.raw, me, foe);
+    let ops = powerOf(me)(me.v, me.raw, me, foe);
+    if (me.fl.starpiece) ops = ops.map(o => ['S', 'P', 'T', 'Sp', 'drain', 'shield', 'heal'].includes(o[0]) ? [o[0], o[1] * 2, ...o.slice(2)] : o);
     let first = true;
     const mode = APM[me.ability] || 'first';
     const hasdmg = ops.some(o => ['S', 'P', 'T', 'Sp', 'drain', 'delay'].includes(o[0]));
@@ -802,9 +823,10 @@ class Duel {
       else if (k === 'carry') me.side.carry[op[1]] += op[2];
       else if (k === 'foecharge') foe.charge = Math.max(0, foe.charge + op[1]);
       else if (k === 'execute') { if (foe.hp > 0 && foe.hp <= op[1]) { foe.hp = 0; this.kill_hooks(me, foe); } }
+      else if (k === 'koif') { if (foe.hp > 0 && op[1].some(n => foe.st[n] > 0) && !(op[2] && foe.types.has(op[2]))) { foe.hp = 0; this.kill_hooks(me, foe); } }
       else if (k === 'kocharge') { if (foe.hp <= 0) me.charge = Math.min(me.ppmax, me.charge + op[1]); }
       else if (k === 'koheal') { if (foe.hp <= 0) this.heal(me, trunc(foe.maxhp * op[1])); }
-      else if (k === 'delay') this.sides[1 - me.side.idx].delays.push([op[1], op[2] + ap_, me.side.idx]);
+      else if (k === 'delay') this.sides[1 - me.side.idx].delays.push([op[1], op[2] + (op.length > 3 ? 0 : ap_), me.side.idx]);
       else if (k === 'atk') { for (let q = 0; q < op[1]; q++) if (foe.hp > 0) this.attack(me, foe, true); }
       else if (k === 'reflect') me.reflect = [op[1], op[2]];
       else if (k === 'spiky') me.spiky = [op[1], op[2]];
@@ -970,8 +992,8 @@ class Duel {
       }
       for (const sd0 of this.sides) {
         const a0 = sd0.active;
-        if (a0.hp <= 0 && a0.fl.revive && !a0.revived) {
-          a0.revived = true; a0.hp = a0.maxhp;
+        if (a0.hp <= 0 && (a0.fl.revive || a0.rhalf) && !a0.revived) {
+          a0.revived = true; a0.hp = a0.fl.revive ? a0.maxhp : Math.max(1, Math.floor(a0.maxhp / 2));
           if (a0.fl.revive >= 2) sd0.carry.shield += 4;
           this.say(`${a0.name} is revived`);
           continue;

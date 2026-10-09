@@ -4,7 +4,7 @@
 const UI = window.UI, D = window.PAC_DATA, G = window.PACGame, B = window.PACBots, E = window.PACEngine, ITEMS = D.items;
 const S = UI.state;
 const { GATE, TIERS, TRADE } = G;
-const SAVE_KEY = 'pac-digital-save-v2', PREF_KEY = 'pac-digital-prefs-v1';
+const SAVE_KEY = 'pac-digital-save-v3', PREF_KEY = 'pac-digital-prefs-v1';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const me = () => S.g.players[S.g.human];
 const $app = () => document.getElementById('app');
@@ -322,7 +322,7 @@ function showRules() {
     <p><b>A round.</b> Income → (pick event) → shop → duel. Income is 5 + interest (1 per 5 gold banked, max 3) + streak gold (2 in a row +1, 3 → +2, 4+ → +3, wins or losses) and +2 XP. Round 1 has no income.</p>
     <p><b>The shop.</b> Each tier has a market deck of 32 random Pokémon of that tier, with 4 face up at all times. Players take turns, worst score first, one action each: buy a card or item, evolve, churn (1 gold) or pass. It repeats until everybody has passed. <b>Once you pass, you can't buy anything else this round.</b> A Pokémon can't hold two of the same item. Tier II opens at level 3, III at 4, IV at 5, V at 6. Buying XP (4 gold = 4 XP), moving cards and giving items are free and don't use your turn.</p>
     <p><b>Level and lineup.</b> Level 3 needs 2 XP total, then 6, 14, 30, 56 (levels 4–7). Your lineup holds as many Pokémon as your level. Order matters: your first Pokémon starts the fight and the next one enters when one is knocked out.</p>
-    <p><b>Trade-in.</b> You never sell for gold. Instead trade cards or items in as payment: trade-in value I 0, II 2, III 4, IV 7, V 14, Unique 15, Legendary 30. <b>Evolve</b> only if the evolved card is face up in the shop: your old card counts at its full price.</p>
+    <p><b>Trade-in.</b> You never sell for gold. Instead trade cards or items in as payment: trade-in value I 0, II 2, III 4, IV 7, V 14, Unique 12, Legendary 25 (Unique and Legendary cards can't be bought, so their price shows —). <b>Evolve</b> only if the evolved card is face up in the shop: your old card counts at its full price.</p>
     <p><b>Picks.</b> Before round 1 everyone chooses 1 of 3 Tier I Additional cards as a starter, and before rounds 2, 5 and 8 1 of 3 Additional cards (Tier II/III/IV). Each is bundled with a random item of the same tier (any item, gems included). Every Pokémon you don't take is shuffled into the market deck of its tier; before round 6 a Unique and before round 9 a Legendary, each chosen from 5 cards (no items).</p>
     <p><b>Duels.</b> Each Pokémon attacks, gains 1 charge, and casts its charge power when its charge reaches PP. A faster foe pushes the initiative bar; synergies activate from your whole lineup and stay fixed. Hover any card for details. 5 crit tokens = one ×2 crit.</p>
     <p><b>Shields &amp; overtime.</b> Shield soaks damage but never the last point: every hit deals at least 1 damage to HP. After round 25 of a duel, each Pokémon takes true damage after its own turn (1, then +1 every 5 rounds) that ignores shield.</p>

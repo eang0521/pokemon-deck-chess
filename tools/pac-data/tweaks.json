@@ -1,0 +1,679 @@
+{
+"Azumarill": {
+"atk": -2,
+"hp": -2,
+"sdf": -2
+},
+"Ivysaur": {
+"atk": 1,
+"hp": 2,
+"sdf": 1,
+"df": 1,
+"spd": 1
+},
+"Pupitar": {
+"atk": 1,
+"hp": 2
+},
+"Lickilicky": {
+"atk": 1,
+"hp": 2,
+"sdf": 1,
+"df": 1
+},
+"Roselia": {
+"atk": 1,
+"hp": 2
+},
+"Rhydon": {
+"atk": -1,
+"hp": -2
+},
+"Sceptile": {
+"atk": -1,
+"hp": -2,
+"df": -1
+},
+"Gurdurr": {
+"atk": -4,
+"hp": -6,
+"df": -1,
+"sdf": -1
+},
+"Darmanitan_Zen": {
+"atk": 3,
+"hp": 2,
+"df": 1
+},
+"Magmortar": {
+"atk": -1,
+"hp": -2,
+"df": -1
+},
+"Incineroar": {
+"atk": 1,
+"hp": 2
+},
+"Reuniclus": {
+"atk": 3,
+"hp": 2,
+"spd": 1
+},
+"Kingambit": {
+"atk": -4,
+"hp": -6,
+"sdf": -2
+},
+"Aipom": {
+"atk": -1
+},
+"Roggenrola": {
+"atk": 1,
+"hp": 2
+},
+"Magneton": {
+"atk": 1
+},
+"Raichu": {
+"atk": -4,
+"hp": -6,
+"sdf": -2
+},
+"Chesnaught": {
+"atk": -2,
+"hp": -2,
+"df": -1
+},
+"Kadabra": {
+"atk": 2,
+"hp": 2,
+"sdf": 1
+},
+"Vanillish": {
+"atk": 1,
+"hp": 2
+},
+"Primeape": {
+"atk": -3,
+"hp": -2,
+"sdf": -1
+},
+"Leavanny": {
+"atk": -1,
+"hp": -2,
+"df": -1
+},
+"Lycanroc_Day": {
+"atk": 3,
+"hp": 2,
+"sdf": 1
+},
+"Tsareena": {
+"atk": -2,
+"hp": -2,
+"df": -1
+},
+"Luxray": {
+"atk": -1,
+"hp": -2
+},
+"Talonflame": {
+"atk": -3,
+"hp": -6,
+"sdf": -1
+},
+"Baxcalibur": {
+"atk": -4,
+"hp": -6,
+"sdf": -2
+},
+"Floette": {
+"atk": 1
+},
+"Poliwrath": {
+"atk": -4,
+"hp": -6,
+"sdf": -3,
+"df": -1
+},
+"Loudred": {
+"atk": 2,
+"hp": 2,
+"sdf": 1
+},
+"Zweilous": {
+"atk": 3,
+"hp": 0,
+"df": 1,
+"spd": 1
+},
+"Nidoking": {
+"atk": -1,
+"hp": -2,
+"df": -1
+},
+"Empoleon": {
+"atk": -1
+},
+"Whirlipede": {
+"atk": -2,
+"hp": -4,
+"df": -1
+},
+"Quaquaval": {
+"atk": -2,
+"hp": -4,
+"df": -1
+},
+"Lycanroc_Night": {
+"atk": 1,
+"hp": 2,
+"sdf": 1,
+"df": 1,
+"spd": 1
+},
+"Rillaboom": {
+"atk": -2,
+"hp": -2,
+"df": -1
+},
+"Pikachu": {
+"atk": -1,
+"hp": -2,
+"df": -1
+},
+"Charizard": {
+"atk": -4,
+"hp": -10,
+"df": -1,
+"sdf": -2
+},
+"Mamoswine": {
+"atk": -3,
+"hp": -4,
+"df": -1,
+"sdf": -1
+},
+"Goodra": {
+"atk": 1,
+"hp": 2
+},
+"Vibrava": {
+"atk": 1,
+"hp": 2
+},
+"Meowstic_Male": {
+"atk": 2,
+"hp": 2,
+"sdf": 1
+},
+"Gabite": {
+"atk": 1,
+"hp": 2
+},
+"Tinkatuff": {
+"atk": -2,
+"hp": -2,
+"df": -1
+},
+"Ursaring": {
+"atk": -1
+},
+"Luxio": {
+"atk": -1,
+"hp": -2,
+"df": -1
+},
+"Duosion": {
+"atk": 1,
+"hp": 2,
+"sdf": 1,
+"df": 1
+},
+"Lycanroc_Dusk": {
+"atk": 3,
+"hp": 2,
+"sdf": 1
+},
+"Exploud": {
+"atk": 1,
+"hp": 2,
+"sdf": 1,
+"df": 1,
+"spd": 1
+},
+"Hydreigon": {
+"atk": 2,
+"hp": 2,
+"df": 1,
+"spd": 1
+},
+"Gardevoir": {
+"atk": 2,
+"hp": 2,
+"df": 1
+},
+"Froslass": {
+"atk": -4,
+"hp": -10,
+"sdf": -2
+},
+"Tinkaton": {
+"atk": -3,
+"hp": -4
+},
+"Porygon_Z": {
+"atk": -4,
+"hp": -4,
+"sdf": -1
+},
+"Inteleon": {
+"atk": -3,
+"hp": -2,
+"sdf": -1
+},
+"Golbat": {
+"atk": -1,
+"hp": -2
+},
+"Blastoise": {
+"atk": -2,
+"hp": -4,
+"sdf": -2
+},
+"Crobat": {
+"atk": -4,
+"hp": -8,
+"sdf": -2
+},
+"Meowscarada": {
+"atk": -3,
+"hp": -2,
+"df": -1
+},
+"Meowstic_Female": {
+"atk": 1,
+"hp": 2,
+"sdf": 1
+},
+"Silcoon": {
+"atk": 3,
+"hp": 2,
+"sdf": 1
+},
+"Dewott": {
+"atk": -1,
+"hp": -2,
+"df": -1
+},
+"Donphan": {
+"atk": 1,
+"hp": 2,
+"sdf": 1,
+"df": 1
+},
+"Bisharp": {
+"atk": -3,
+"hp": -6,
+"df": -1
+},
+"Florges_White": {
+"atk": 1
+},
+"Arctibax": {
+"atk": -3,
+"hp": -4,
+"sdf": -1
+},
+"Venusaur": {
+"atk": 3,
+"hp": 2,
+"sdf": 1,
+"spd": 1
+},
+"Flygon": {
+"atk": 1,
+"hp": 2
+},
+"Samurott": {
+"atk": -1,
+"hp": -2,
+"df": -1
+},
+"Annihilape": {
+"atk": -1,
+"hp": -2,
+"df": -1
+},
+"Conkeldurr": {
+"atk": -4,
+"hp": -2,
+"sdf": -1
+},
+"Solosis": {
+"atk": 2,
+"hp": 2,
+"df": 2
+},
+"Floette_Blue": {
+"atk": 1
+},
+"Naclstack": {
+"atk": 1
+},
+"Arboliva": {
+"atk": 1,
+"hp": 2
+},
+"Ambipom": {
+"atk": 1,
+"hp": 2
+},
+"Doublade": {
+"atk": 1,
+"hp": 2,
+"sdf": 1,
+"df": 1
+},
+"Kirlia": {
+"atk": 1,
+"hp": 2
+},
+"Boldore": {
+"atk": 3,
+"hp": 2,
+"sdf": 1
+},
+"Mightyena": {
+"atk": 1
+},
+"Porygon_2": {
+"atk": -3,
+"hp": -6,
+"sdf": -1
+},
+"Fletchinder": {
+"atk": -2,
+"hp": -2,
+"sdf": -1
+},
+"Thwackey": {
+"atk": -3,
+"hp": -2,
+"sdf": -1
+},
+"Alakazam": {
+"atk": 3,
+"hp": 2,
+"sdf": 1
+},
+"Aegislash_Blade": {
+"atk": 1
+},
+"Roserade": {
+"atk": 3,
+"hp": 2,
+"sdf": 1
+},
+"Gigalith": {
+"atk": 3,
+"hp": 2,
+"spd": 1
+},
+"Scolipede": {
+"atk": -3,
+"hp": -6,
+"df": -1
+},
+"Ursaluna_Bloodmoon": {
+"atk": -2,
+"hp": -2,
+"df": -1
+},
+"Torracat": {
+"atk": 1
+},
+"Pawmot": {
+"atk": -1
+},
+"Combusken": {
+"atk": 1
+},
+"Swellow": {
+"atk": -1
+},
+"Chansey": {
+"atk": -1,
+"hp": -2,
+"df": -1
+},
+"Walrein": {
+"atk": -1,
+"hp": -2
+},
+"Electivire": {
+"atk": -1
+},
+"Aggron": {
+"atk": -1,
+"hp": -2
+},
+"Delphox": {
+"atk": -3,
+"hp": -4,
+"sdf": -2
+},
+"Blaziken": {
+"atk": 1,
+"hp": 2
+},
+"Vanilluxe": {
+"atk": 1,
+"hp": 2
+},
+"Rhyperior": {
+"atk": -1,
+"hp": -2
+},
+"Dusclops": {
+"atk": 1
+},
+"Hattrem": {
+"atk": 1,
+"hp": 2
+},
+"Croconaw": {
+"atk": 1,
+"hp": 2
+},
+"Sealeo": {
+"atk": 1
+},
+"Stoutland": {
+"atk": -1,
+"hp": -2
+},
+"Ariados": {
+"atk": 1,
+"hp": 2
+},
+"Grotle": {
+"atk": 1
+},
+"Machamp": {
+"atk": -1,
+"hp": -2
+},
+"Kingdra": {
+"atk": -1
+},
+"Aegislash": {
+"atk": 1,
+"hp": 2
+},
+"Duskull": {
+"atk": 1
+},
+"Charmeleon": {
+"atk": -1,
+"hp": -2,
+"df": -1,
+"sdf": -1
+},
+"Floragato": {
+"atk": -1
+},
+"Honedge": {
+"atk": 1
+},
+"Jigglypuff": {
+"atk": 1
+},
+"Prinplup": {
+"atk": 1,
+"hp": 2,
+"df": 1
+},
+"Klinklang": {
+"atk": 1,
+"hp": 2
+},
+"Dusknoir": {
+"atk": -1,
+"hp": -2
+},
+"Darmanitan": {
+"atk": 1
+},
+"Torterra": {
+"atk": 1
+},
+"Machoke": {
+"atk": 1
+},
+"Pawniard": {
+"atk": -1
+},
+"Rockruff": {
+"atk": 1,
+"hp": 2
+},
+"Electabuzz": {
+"atk": -1,
+"hp": -2
+},
+"Braixen": {
+"atk": -1
+},
+"Floette_Yellow": {
+"atk": 1
+},
+"Golem": {
+"atk": -1,
+"hp": -2,
+"df": -1
+},
+"Florges_Blue": {
+"atk": 1
+},
+"Seadra": {
+"atk": 1,
+"hp": 2
+},
+"Floette_Orange": {
+"atk": 1,
+"hp": 2
+},
+"Magnezone": {
+"atk": -1,
+"hp": -2
+},
+"Ampharos": {
+"atk": -1
+},
+"Togetic": {
+"atk": 1
+},
+"Klang": {
+"atk": 1
+},
+"Florges": {
+"atk": 1,
+"hp": 2
+},
+"Drizzile": {
+"atk": -1,
+"hp": -2
+},
+"Blissey": {
+"atk": -1
+},
+"Typhlosion": {
+"atk": -1
+},
+"Dragonair": {
+"atk": 1
+},
+"Tinkatink": {
+"atk": -1,
+"hp": -2
+},
+"Gengar": {
+"atk": -1
+},
+"Phanpy": {
+"atk": 1
+},
+"Chandelure": {
+"atk": -1
+},
+"Feraligatr": {
+"atk": 1
+},
+"Politoed": {
+"atk": -1,
+"hp": -2
+},
+"Garganacl": {
+"atk": -1,
+"hp": -2
+},
+"Rhyhorn": {
+"atk": 1
+},
+"Sligoo": {
+"atk": 1
+},
+"Florges_Yellow": {
+"atk": 1
+},
+"Gastly": {
+"atk": 1
+},
+"Fuecoco": {
+"atk": -1,
+"hp": -2
+},
+"Dolliv": {
+"atk": 1
+},
+"Darumaka": {
+"atk": 1
+},
+"Florges_Orange": {
+"atk": 1
+},
+"Quilava": {
+"atk": 1
+},
+"Floette_White": {
+"atk": 1
+},
+"Wurmple": {
+"atk": 1,
+"hp": 2
+},
+"Metang": {
+"atk": 1
+}
+}

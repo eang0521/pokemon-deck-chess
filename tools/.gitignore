@@ -1,0 +1,5 @@
+keldaancommunity/
+__pycache__/
+pac-print/out/
+rulebook/*.html
+rulebook/*.pdf

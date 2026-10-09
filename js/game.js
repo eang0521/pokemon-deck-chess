@@ -43,9 +43,11 @@ class Game {
     this.rng.shuffle(this.ideck);
     this.row = {}; for (const t of TIERS) this.row[t] = Array(ROW_SIZE).fill(null);
     for (const t of TIERS) for (let i = 0; i < ROW_SIZE; i++) this.row[t][i] = this.draw(t);
-    this.irow = [null, null, null, null];
+    // item market: 2 items of each item tier (tiers that exist in the item deck)
+    this.itier = []; for (const t of TIERS) if (this.ideck.some(x => x.tier === t)) this.itier.push(t, t);
+    this.irow = this.itier.map(() => null);
     this.discard = { cards: [], items: [] }; // out of play for the rest of the game
-    for (let i = 0; i < 4; i++) this.irow[i] = this.idraw();
+    for (let i = 0; i < this.irow.length; i++) this.irow[i] = this.idraw(this.itier[i]);
     this.players = [];
     const defs = opts.players || [];
     for (let i = 0; i < 8; i++) {
@@ -63,7 +65,22 @@ class Game {
     if (this.picks[t] && this.picks[t].length) return this.picks[t].pop();
     return null;
   }
-  idraw() { return this.ideck.length ? this.ideck.pop() : null; }
+  idraw(tier) {
+    if (!tier) return this.ideck.length ? this.ideck.pop() : null;
+    for (let i = this.ideck.length - 1; i >= 0; i--) if (this.ideck[i].tier === tier) return this.ideck.splice(i, 1)[0];
+    return null;
+  }
+  refillItems() { for (let i = 0; i < this.irow.length; i++) if (!this.irow[i]) this.irow[i] = this.idraw(this.itier[i]); }
+  // topmost item of a tier that can ride along on a Pokemon for one battle (Wonder Box)
+  idrawLoan(tier, c, keys) {
+    for (let i = this.ideck.length - 1; i >= 0; i--) {
+      const it = this.ideck[i]; if (it.tier !== tier || keys.includes(it.key)) continue;
+      const f = ITEMS[it.key].flags;
+      if (f.slot || f.econ_income || f.econ_ko || f.econ_churn || f.wonder || (f.evo_only && !this.canEvolveFurther(c))) continue;
+      return this.ideck.splice(i, 1)[0];
+    }
+    return null;
+  }
   idrawStarter(tier = 'I') {
     // topmost item of the given tier (any item, gems included)
     for (let i = this.ideck.length - 1; i >= 0; i--) { const it = this.ideck[i]; if (it.tier === tier) return this.ideck.splice(i, 1)[0]; }
@@ -231,6 +248,7 @@ class Game {
   }
   startShop() {
     this.phase = 'shop';
+    this.refillItems();
     this.shop = { order: this.shopOrder(), pos: 0, acted: false, sweeps: 1, humanDone: false, out: [] };
     for (const p of this.players) if (p.bot) root.PACBots.free(this, p);
   }
@@ -313,7 +331,7 @@ class Game {
     const cost = Math.max(0, it.price - tc.credit);
     if (cost > p.gold) return { ok: false, err: `You need ${cost} gold.` };
     p.gold -= cost; this.applyTrade(p, tc);
-    this.irow[slot] = this.idraw(); p.inv.push(it); p.stats.items++;
+    this.irow[slot] = this.idraw(this.itier[slot]); p.inv.push(it); p.stats.items++;
     return { ok: true, item: it, cost };
   }
 
@@ -326,7 +344,18 @@ class Game {
   gemKeys(p) { return p.inv.filter(i => ITEMS[i.key].flags.gem).map(i => i.key); }
   buildSide(p) {
     const cs = this.lineupCards(p);
-    const bc = cs.map(c => new BCard(c.spec, c.items.map(i => i.key)));
+    const bc = cs.map(c => {
+      const keys = c.items.map(i => i.key);
+      // Wonder Box: borrow the top Tier III and Tier II item for this battle (max 3 items), returned afterwards
+      if (c.items.some(i => ITEMS[i.key].flags.wonder)) {
+        for (const t of ['III', 'II']) {
+          if (keys.length >= 3) break;
+          const it = this.idrawLoan(t, c, keys);
+          if (it) { keys.push(it.key); (this.loans = this.loans || []).push(it); }
+        }
+      }
+      return new BCard(c.spec, keys);
+    });
     if (bc.length) bc[0].items = bc[0].items.concat(this.gemKeys(p));
     return { cards: cs, bc };
   }
@@ -345,6 +374,10 @@ class Game {
   pairings(r) { return this.rawPairs(r).map(([a, b]) => this.rng.random() < .5 ? [b, a] : [a, b]); }
   humanReady() { return this.lineupCards(this.players[this.human]).length > 0; }
   runBattles() {
+    try { return this._runBattles(); }
+    finally { for (const it of this.loans || []) this.returnItem(it); this.loans = []; }
+  }
+  _runBattles() {
     const r = this.round; this.phase = 'duel';
     for (const p of this.players) if (p.bot) { root.PACBots.free(this, p); root.PACBots.arrange(this, p); }
     const out = []; let humanReplay = null;
