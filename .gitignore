@@ -2,3 +2,6 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+server/node_modules/
+server/.wrangler/
+.vercel/

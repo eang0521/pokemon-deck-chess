@@ -1,0 +1,5 @@
+tools/
+server/
+tests/
+.claude/
+README.txt

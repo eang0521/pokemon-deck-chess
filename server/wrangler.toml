@@ -1,0 +1,14 @@
+# Cloudflare Worker + Durable Object hosting the online rooms (wss://pac-rooms.<account>.workers.dev/room/CODE).
+#   npx wrangler login     (once, opens a browser)
+#   npm run deploy         (from this folder)
+name = "pac-rooms"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "RoomDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomDO"]

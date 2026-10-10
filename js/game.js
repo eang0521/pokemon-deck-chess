@@ -50,13 +50,18 @@ class Game {
     for (let i = 0; i < this.irow.length; i++) this.irow[i] = this.idraw(this.itier[i]);
     this.players = [];
     const defs = opts.players || [];
+    // a seat is human when its def says so; older callers pass a single opts.human seat index instead
+    const anyFlag = defs.some(d => d && d.human !== undefined);
+    const humanIdx = opts.human === undefined ? 0 : opts.human;
     for (let i = 0; i < 8; i++) {
       const d = defs[i] || {};
-      this.players.push({ idx: i, name: d.name || ('Player ' + (i + 1)), bot: i !== (opts.human === undefined ? 0 : opts.human), persona: d.persona || null, gold: 5, xp: 0, level: 2,
+      const human = anyFlag ? !!d.human : i === humanIdx;
+      this.players.push({ idx: i, name: d.name || ('Player ' + (i + 1)), bot: !human, away: false, ready: true, autoPass: true, persona: d.persona || null, gold: 5, xp: 0, level: 2,
         cards: [], order: [], inv: [], points: 20, streak: 0, wins: 0, losses: 0, draws: 0, inc: null, deal: null, stats: { evolve: 0, bought: 0, items: 0, picks: 0, hatch: 0, interest: 0, streakGold: 0, kos: 0 }, last: null, hist: [20] });
     }
-    this.human = opts.human === undefined ? 0 : opts.human;
-    this.shop = null; this.pendingPick = null; this.results = null;
+    // first human seat: the default point of view for single-player screens
+    this.human = this.players.findIndex(p => !p.bot);
+    this.shop = null; this.results = null;
   }
 
   // ---------- decks ----------
@@ -97,10 +102,13 @@ class Game {
     else if (s.pool === 'hatch') this.hatch[s.tier].unshift(c);
   }
   returnItem(it) { this.ideck.unshift(it); }
-  say(msg, kind) { this.log.push({ r: this.round, msg, kind: kind || '' }); }
+  say(msg, kind, seat) { this.log.push(seat === undefined ? { r: this.round, msg, kind: kind || '' } : { r: this.round, msg, kind: kind || '', seat }); }
 
   // ---------- player helpers ----------
   P(i) { return this.players[i]; }
+  // humans who have stepped away (disconnected) are played by the bot logic until they return
+  isAuto(p) { return p.bot || p.away; }
+  humans() { return this.players.filter(p => !p.bot); }
   cardOf(p, uid) { return p.cards.find(c => c.uid === uid); }
   itemOf(p, uid) { return p.inv.find(i => i.uid === uid); }
   lineupCards(p) { return p.order.map(u => this.cardOf(p, u)).filter(Boolean); }
@@ -183,7 +191,6 @@ class Game {
       }
       p.gold += scale; p.deal = null;
     }
-    this.pendingPick = null;
     const ev = PICKS[r];
     if (ev) {
       const order = this.shopOrder();
@@ -204,12 +211,15 @@ class Game {
         }
       }
       this.pickEvent = ev;
-      for (const p of this.players) if (p.bot && p.deal) this.botPick(p);
-      const hp = this.players[this.human];
-      if (hp && hp.deal) { this.phase = 'pick'; this.pendingPick = hp.deal; return; }
+      for (const p of this.players) if (this.isAuto(p) && p.deal) this.botPick(p);
+      // empty deals (pool ran dry) need no choice
+      for (const p of this.players) if (p.deal && !p.deal.length) { p.deal = null; p.dealItems = null; }
+      if (this.waitingPick().length) { this.phase = 'pick'; return; }
     }
     this.startShop();
   }
+  // seats that still have to choose from their deal
+  waitingPick() { return this.players.filter(p => p.deal && p.deal.length); }
   botPick(p) {
     const deal = p.deal; if (!deal || !deal.length) return;
     const chosen = root.PACBots.pickChoice(this, p, deal);
@@ -236,10 +246,14 @@ class Game {
     p.deal = null; this.addCard(p, c); p.stats.picks++;
     this.say(`${p.name} ${p.name === 'You' ? 'pick' : 'picks'} ${c.spec.name}`, 'pick');
   }
-  humanPick(uid) {
-    const p = this.players[this.human]; const c = (p.deal || []).find(x => x.uid === uid);
+  humanPick(seat, uid) {
+    if (this.phase !== 'pick') return { ok: false, err: 'There is nothing to pick right now.' };
+    const p = this.players[seat]; const c = (p.deal || []).find(x => x.uid === uid);
     if (!c) return { ok: false, err: 'Not one of the dealt cards.' };
-    this.finishPick(p, c); this.pendingPick = null; this.startShop(); return { ok: true, card: c };
+    this.finishPick(p, c);
+    // the shop opens once every seat has chosen
+    if (!this.waitingPick().length) this.startShop();
+    return { ok: true, card: c };
   }
 
   // ---------- shop ----------
@@ -250,7 +264,7 @@ class Game {
     this.phase = 'shop';
     this.refillItems();
     this.shop = { order: this.shopOrder(), pos: 0, acted: false, sweeps: 1, humanDone: false, out: [] };
-    for (const p of this.players) if (p.bot) root.PACBots.free(this, p);
+    for (const p of this.players) if (this.isAuto(p)) root.PACBots.free(this, p);
   }
   // advance one seat. returns {done} | {human:true, player} | {player, desc}
   stepShop() {
@@ -262,15 +276,20 @@ class Game {
       S.order = left; S.pos = 0; S.acted = false; S.sweeps++;
     }
     const p = S.order[S.pos];
-    if (!p.bot) return { human: true, player: p };
+    if (!this.isAuto(p)) return { human: true, player: p };
     root.PACBots.free(this, p);
     const desc = root.PACBots.turn(this, p);
     S.pos++;
     if (desc) { S.acted = true; this.say(desc, 'bot'); } else S.out.push(p.idx);
     return { player: p, desc: desc || null };
   }
-  humanDid(acted) { const S = this.shop; if (acted) S.acted = true; S.pos++; }
-  humanPass() { const S = this.shop; if (!S.out.includes(this.human)) S.out.push(this.human); S.pos++; return { ok: true }; }
+  // seat whose shop turn it is (null outside the shop or between sweeps)
+  turnSeat() { const S = this.shop; return this.phase === 'shop' && S && S.pos < S.order.length ? S.order[S.pos].idx : null; }
+  humanDid(seat, acted) { const S = this.shop; if (this.turnSeat() !== seat) return false; if (acted) S.acted = true; S.pos++; return true; }
+  humanPass(seat) {
+    const S = this.shop; if (this.turnSeat() !== seat) return { ok: false, err: 'It is not your turn.' };
+    if (!S.out.includes(seat)) S.out.push(seat); S.pos++; return { ok: true };
+  }
   tradeCredit(p, uids) {
     let credit = 0; const cards = [], items = [];
     for (const u of uids || []) {
@@ -372,19 +391,20 @@ class Game {
   }
   opponentOf(idx, r) { for (const [a, b] of this.rawPairs(r || this.round)) { if (a === idx) return this.players[b]; if (b === idx) return this.players[a]; } return null; }
   pairings(r) { return this.rawPairs(r).map(([a, b]) => this.rng.random() < .5 ? [b, a] : [a, b]); }
-  humanReady() { return this.lineupCards(this.players[this.human]).length > 0; }
   runBattles() {
     try { return this._runBattles(); }
     finally { for (const it of this.loans || []) this.returnItem(it); this.loans = []; }
   }
   _runBattles() {
     const r = this.round; this.phase = 'duel';
-    for (const p of this.players) if (p.bot) { root.PACBots.free(this, p); root.PACBots.arrange(this, p); }
-    const out = []; let humanReplay = null;
+    for (const p of this.players) if (this.isAuto(p)) { root.PACBots.free(this, p); root.PACBots.arrange(this, p); }
+    // humans who left lineup slots empty get them topped up from the bench
+    for (const p of this.players) if (!this.isAuto(p)) this.autoFill(p);
+    const out = []; const replays = {};
     for (const [ia, ib] of this.pairings(r)) {
       const a = this.players[ia], b = this.players[ib];
       const sa = this.buildSide(a), sb = this.buildSide(b);
-      const involvesHuman = (ia === this.human || ib === this.human);
+      const involvesHuman = !a.bot || !b.bot;
       let res, duel = null;
       if (!sa.bc.length || !sb.bc.length) {
         res = { winner: !sa.bc.length && !sb.bc.length ? null : !sa.bc.length ? 1 : 0, left: Math.max(sa.bc.length, sb.bc.length), rounds: 0, forfeit: true };
@@ -414,21 +434,28 @@ class Game {
         const lc = this.lineupCards(l); const cnt = this.typeCounts(lc); const bl = level_of('BABY', cnt.BABY || 0);
         if (bl) {
           const tk = ['II', 'III', 'IV'][bl - 1]; const dk = this.hatch[tk];
-          if (dk.length) { const hc = dk.pop(); this.addCard(l, hc); l.stats.hatch++; rec.hatch.push({ player: l.idx, card: hc }); }
+          if (dk.length) { const hc = dk.pop(); this.addCard(l, hc); l.stats.hatch++; rec.hatch.push({ player: l.idx, name: hc.spec.name, tier: hc.spec.tier }); }
         }
       }
       out.push(rec);
       if (involvesHuman && duel) {
-        const meSide = ia === this.human ? 0 : 1;
-        humanReplay = this.makeReplay(duel, a, b, res, meSide, r);
+        if (!a.bot) replays[ia] = this.makeReplay(duel, a, b, res, 0, r);
+        if (!b.bot) replays[ib] = this.makeReplay(duel, a, b, res, 1, r);
       }
     }
     for (const p of this.players) p.hist.push(p.points);
-    this.results = { r, pairs: out, replay: humanReplay };
-    this.history.push(this.results);
+    this.results = { r, pairs: out, replays };
+    this.history.push({ r, pairs: out });
     this.phase = 'results';
+    // every human confirms the results before the next round starts (away seats count as ready)
+    for (const p of this.players) p.ready = this.isAuto(p);
     return this.results;
   }
+  markReady(seat) {
+    if (this.phase !== 'results') return { ok: false, err: 'Nothing to confirm right now.' };
+    this.players[seat].ready = true; return { ok: true };
+  }
+  allReady() { return this.players.every(p => p.ready || this.isAuto(p)); }
   makeReplay(duel, a, b, res, meSide, r) {
     const side = i => ({ name: [a, b][i].name, idx: [a, b][i].idx, cards: duel.orig[i].map(c => ({ id: c.id, name: c.name, spec: c.spec, items: c.items_eff.slice(), syn: Object.assign({}, c.syn), types: Array.from(c.types), hp0: c.hp0, ab: c.abname })), light: duel.sides[i].light, gems: duel.sides[i].gems && Object.assign({}, duel.sides[i].gems) });
     return { r, sides: [side(0), side(1)], snaps: duel.snaps, result: res, me: meSide, bonus: bonusOf(r) };
@@ -449,19 +476,21 @@ Game.prototype.serialize = function () {
   const addItem = it => { if (it) items.set(it.uid, it); return it ? it.uid : null; };
   const addCard = c => { if (!c) return null; cards.set(c.uid, { u: c.uid, s: c.spec.id, i: c.items.map(addItem) }); return c.uid; };
   const pl = this.players.map(p => ({ idx: p.idx, name: p.name, bot: p.bot, persona: p.persona, gold: p.gold, xp: p.xp, level: p.level, cards: p.cards.map(addCard), order: p.order.slice(), inv: p.inv.map(addItem),
+    away: !!p.away, ready: p.ready !== false, autoPass: p.autoPass !== false,
     points: p.points, streak: p.streak, wins: p.wins, losses: p.losses, draws: p.draws, inc: p.inc, deal: p.deal ? p.deal.map(addCard) : null, dealItems: p.dealItems ? p.dealItems.map(addItem) : null, stats: p.stats, last: p.last, hist: p.hist, churned: p.churned || null }));
   const lists = o => { const r = {}; for (const k in o) r[k] = o[k].map(addCard); return r; };
   const data = { v: 1, seed: this.seed, rng: this.rng.getState(), uid: this.uid, round: this.round, phase: this.phase, human: this.human, log: this.log.slice(-120),
     players: pl, deck: lists(this.deck), picks: lists(this.picks), hatch: lists(this.hatch), row: Object.fromEntries(Object.keys(this.row).map(t => [t, this.row[t].map(addCard)])),
     irow: this.irow.map(addItem), ideck: this.ideck.map(addItem), discard: { cards: this.discard.cards.map(addCard), items: this.discard.items.map(addItem) }, pickEvent: this.pickEvent || null,
     shop: this.shop ? { order: this.shop.order.map(p => p.idx), pos: this.shop.pos, acted: this.shop.acted, sweeps: this.shop.sweeps, out: this.shop.out } : null,
-    pendingPick: this.pendingPick ? this.pendingPick.map(c => c.uid) : null };
+    results: this.results || null };
   data.cards = Array.from(cards.values()); data.items = Array.from(items.values());
   return data;
 };
 Game.deserialize = function (d) {
-  const g = new Game(d.seed, { players: d.players.map(p => ({ name: p.name, persona: p.persona })), human: d.human });
-  g.rng.setState(d.rng); g.uid = d.uid; g.round = d.round; g.phase = d.phase; g.log = d.log || []; g.history = []; g.results = null;
+  const g = new Game(d.seed, { players: d.players.map(p => ({ name: p.name, persona: p.persona, human: !p.bot })) });
+  if (d.rng !== undefined) g.rng.setState(d.rng);
+  g.uid = d.uid; g.round = d.round; g.phase = d.phase; g.log = d.log || []; g.history = []; g.results = d.results || null;
   const items = new Map(d.items.map(i => [i.uid, i]));
   const cards = new Map(d.cards.map(c => [c.u, { uid: c.u, spec: g.specs[c.s], items: c.i.map(u => items.get(u)) }]));
   const C = u => u == null ? null : cards.get(u), I = u => u == null ? null : items.get(u);
@@ -473,8 +502,7 @@ Game.deserialize = function (d) {
   g.players = d.players.map(p => Object.assign({}, p, { cards: p.cards.map(C), inv: p.inv.map(I), deal: p.deal ? p.deal.map(C) : null, dealItems: p.dealItems ? p.dealItems.map(I) : null }));
   g.pickEvent = d.pickEvent;
   g.shop = d.shop ? { order: d.shop.order.map(i => g.players[i]), pos: d.shop.pos, acted: d.shop.acted, sweeps: d.shop.sweeps, humanDone: false, out: d.shop.out || [] } : null;
-  g.pendingPick = d.pendingPick ? d.pendingPick.map(C) : null;
-  g.human = d.human;
+  g.human = g.players.findIndex(p => !p.bot);
   return g;
 };
 

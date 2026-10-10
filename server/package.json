@@ -1,0 +1,21 @@
+{
+  "name": "pac-rooms",
+  "private": true,
+  "description": "Online rooms for the Pokemon Auto Chess board game prototype",
+  "scripts": {
+    "start": "node node.js",
+    "test": "node ../tests/flow_test.js && node ../tests/room_test.js",
+    "dev:cf": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "ws": "8.18.3"
+  },
+  "devDependencies": {
+    "wrangler": "4.149.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261006.1": true
+  }
+}

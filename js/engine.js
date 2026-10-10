@@ -1,7 +1,8 @@
 /* PAC duel engine — faithful JS port of the Python simulator (engine.py, duel.py, itemfx.py, genpower.opsfn). */
 (function (root) {
 'use strict';
-const DATA = (typeof window !== 'undefined') ? window.PAC_DATA : require('../build/data.json');
+// card/item data comes from js/data.js (window.PAC_DATA); Node and Workers load it onto the global first
+const DATA = (typeof window !== 'undefined' ? window : globalThis).PAC_DATA;
 
 // ---------- helpers ----------
 function pyround(x) { const f = Math.floor(x), d = x - f; if (d < 0.5) return f; if (d > 0.5) return f + 1; return f % 2 === 0 ? f : f + 1; }

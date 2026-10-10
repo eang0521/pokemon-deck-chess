@@ -13,7 +13,7 @@ UI.findInst = function (uid) {
   for (const t of TIERS) for (const c of g.row[t]) if (c && c.uid === uid) return c;
   return null;
 };
-const me = () => S.g.players[S.g.human];
+const me = () => S.g.players[S.seat];
 
 // ---------- derived info ----------
 UI.synergies = function (p) {
@@ -44,7 +44,7 @@ function topBar() {
   const st = p.streak > 0 ? `<span class="streak win" title="Win streak">▲ ${p.streak}</span>` : p.streak < 0 ? `<span class="streak loss" title="Losing streak (pays gold too)">▼ ${-p.streak}</span>` : `<span class="streak">–</span>`;
   const bonus = G.bonusOf(G_.round || 1);
   return `<header class="topbar">
-    <div class="tb-round"><b>Round ${G_.round}</b><span> / 12</span><small>duel bonus +${bonus}${(() => { const o = G_.opponentOf(G_.human, G_.round); return o ? ' · vs ' + UI.esc(o.name) + ' (' + o.points + ')' : ''; })()}</small></div>
+    <div class="tb-round"><b>Round ${G_.round}</b><span> / 12</span>${G_.humans().length > 1 ? `<span class="tb-who">${UI.esc(me().name)}</span>` : ''}${S.net ? UI.net.badge() : ''}<small>duel bonus +${bonus}${(() => { const o = G_.opponentOf(S.seat, G_.round); return o ? ' · vs ' + UI.esc(o.name) + ' (' + o.points + ')' : ''; })()}</small></div>
     <div class="tb-phase" id="phase-label">${phaseLabel()}</div>
     <div class="tb-stats">
       <div class="tb-stat gold" title="Gold. Interest: +1 per 5 gold banked (max +3)">${UI.coin(p.gold)}<small>next income +${inc}</small></div>
@@ -57,18 +57,24 @@ function topBar() {
   </header>`;
 }
 function phaseLabel() {
-  const G_ = g();
+  const G_ = g(), clock = S.net ? UI.net.clock() : '';
+  const names = seats => seats.map(i => UI.esc(G_.players[i].name)).join(', ');
   if (G_.phase === 'shop') {
     const sh = G_.shop; const cur = sh && sh.order[sh.pos];
-    if (S.humanTurn) return `<span class="turn you">Your turn</span> buy, evolve, churn or pass`;
-    if (cur && cur.bot) return `<span class="turn">${UI.esc(cur.name)}'s turn…</span>`;
+    if (UI.myTurn()) return `<span class="turn you">Your turn</span> buy, evolve, churn or pass${clock}`;
+    if (cur) return `<span class="turn">${UI.esc(cur.name)}'s turn…</span>${!cur.bot && !cur.away ? clock : ''}`;
     return 'Shop';
   }
-  return { duel: 'Battle', results: 'Round results', pick: 'Pick a card', end: 'Game over' }[G_.phase] || '';
+  if (G_.phase === 'pick') {
+    // online views hide other seats' deals, so the server says who is still choosing
+    const w = (S.net && S.net.wait ? S.net.wait.seats : window.PACFlow.waiting(G_).seats).filter(i => i !== S.seat);
+    return me().deal && me().deal.length ? 'Pick a card' + clock : w.length ? `Waiting for ${names(w)} to pick…${clock}` : 'Pick a card';
+  }
+  return { duel: 'Battle', results: 'Round results', end: 'Game over' }[G_.phase] || '';
 }
 function shopRows() {
   const G_ = g(), p = me();
-  const mine = S.humanTurn;
+  const mine = UI.myTurn();
   const rows = TIERS.map(t => {
     const locked = GATE[t] > p.level;
     const tiles = G_.row[t].map((c, i) => {
@@ -79,7 +85,7 @@ function shopRows() {
     return `<div class="trow ${locked ? 'locked' : ''}" style="--tcol:${UI.TIERCOL[t]}"><div class="tlabel"><b>${t}</b><small>${locked ? 'Lv ' + GATE[t] : 'open'}</small></div><div class="tiles">${tiles}</div></div>`;
   }).join('');
   const irow = G_.irow.map((it, i) => it ? UI.itemTile(it, { act: 'shop-item', extra: `data-slot="${i}"`, disabled: GATE[it.tier] > p.level }) : '<div class="itile empty">—</div>').join('');
-  const sh = G_.shop; const ord = sh ? sh.order.map((q, i) => `<span class="${i < sh.pos ? 'done' : i === sh.pos ? 'cur' : ''} ${q.idx === G_.human ? 'you' : ''}">${UI.esc(q.name)}</span>`).join('') : '';
+  const sh = G_.shop; const ord = sh ? sh.order.map((q, i) => `<span class="${i < sh.pos ? 'done' : i === sh.pos ? 'cur' : ''} ${q.idx === S.seat ? 'you' : !q.bot ? 'hum' : ''}">${UI.esc(q.name)}</span>`).join('') : '';
   const actionHint = (mine ? `<div class="turnbar you"><span>Your action: click a card or item <small>(Shift+click = quick buy)</small></span><span><button class="btn ghost" data-act="hint" title="Ask what a simple bot would do now">Hint</button> <button class="btn" data-act="pass">Pass</button></span></div>`
     : `<div class="turnbar">${G_.phase === 'shop' ? 'Waiting for the other players…' : ''}</div>`) + `<div class="hintbox" id="hintbox">${S.hint ? UI.esc(S.hint) : ''}</div>` + (ord ? `<div class="turnorder">Order this sweep: ${ord}</div>` : '');
   return `<section class="shop"><h3>Shop <small>shared · worst score buys first</small></h3>${actionHint}${rows}<h3 class="ih">Items <small>separate row</small></h3><div class="irow">${irow}</div></section>`;
@@ -122,19 +128,19 @@ function invPanel() {
 function standings() {
   const G_ = g();
   const rank = G_.players.slice().sort((a, b) => (b.points - a.points) || (b.wins - a.wins));
-  return `<div class="panel stand"><h3>Standings</h3><table><tbody>${rank.map((p, i) => `<tr class="${p.idx === G_.human ? 'you' : ''}"><td class="rk">${i + 1}</td><td class="nm" title="${UI.esc(p.persona ? p.persona.title + ': ' + p.persona.blurb : 'You')}">${UI.esc(p.name)}${p.persona ? `<small>${UI.esc(p.persona.title)}</small>` : '<small>you</small>'}</td><td class="lv">L${p.level}</td><td class="st">${p.streak > 1 ? '<span class="win">▲' + p.streak + '</span>' : p.streak < -1 ? '<span class="loss">▼' + -p.streak + '</span>' : ''}</td><td class="pt">${p.points}</td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="panel stand"><h3>Standings</h3><table><tbody>${rank.map((p, i) => `<tr class="${p.idx === S.seat ? 'you' : ''}"><td class="rk">${i + 1}</td><td class="nm" title="${UI.esc(p.bot && p.persona ? p.persona.title + ': ' + p.persona.blurb : p.idx === S.seat ? 'You' : 'Player')}">${UI.esc(p.name)}${p.idx === S.seat ? '<small>you</small>' : !p.bot ? `<small>${p.away ? 'away · bot playing' : 'player'}</small>` : p.persona ? `<small>${UI.esc(p.persona.title)}</small>` : ''}</td><td class="lv">L${p.level}</td><td class="st">${p.streak > 1 ? '<span class="win">▲' + p.streak + '</span>' : p.streak < -1 ? '<span class="loss">▼' + -p.streak + '</span>' : ''}</td><td class="pt">${p.points}</td></tr>`).join('')}</tbody></table></div>`;
 }
 // phone-only tab bar (hidden on wider screens by CSS); S.mtab picks which column shows
 function mobileTabs() {
   const G_ = g(), p = me();
   const n = G_.lineupCards(p).filter(c => !G_.hasBow(c)).length, loose = p.inv.filter(i => !G.isUnholdable(i.key)).length;
   const tab = (k, label, extra, cls) => `<button class="mtab ${S.mtab === k ? 'on' : ''} ${cls || ''}" data-act="mtab" data-tab="${k}">${label}${extra ? `<small>${extra}</small>` : ''}</button>`;
-  return `<nav class="mtabs">${tab('shop', 'Shop', S.humanTurn ? 'your turn' : '', S.humanTurn ? 'turn' : '')}${tab('lineup', 'Lineup', `${n}/${p.level}`)}${tab('items', 'Items', loose ? String(loose) : '', loose ? 'has' : '')}${tab('table', 'Table', '')}</nav>`;
+  return `<nav class="mtabs">${tab('shop', 'Shop', UI.myTurn() ? 'your turn' : '', UI.myTurn() ? 'turn' : '')}${tab('lineup', 'Lineup', `${n}/${p.level}`)}${tab('items', 'Items', loose ? String(loose) : '', loose ? 'has' : '')}${tab('table', 'Table', '')}</nav>`;
 }
 function logPanel() {
   const G_ = g();
   const lines = G_.log.slice(-40).reverse();
-  return `<div class="panel logp"><h3>Table talk</h3><div class="log">${lines.map(l => `<div class="ll ${l.kind}"><b>R${l.r}</b> ${UI.esc(l.msg)}</div>`).join('') || '<div class="ph">Nothing yet.</div>'}</div></div>`;
+  return `<div class="panel logp"><h3>Table talk</h3><div class="log">${lines.map(l => `<div class="ll ${l.kind === 'me' && l.seat !== undefined && l.seat !== S.seat ? 'hum' : l.kind}"><b>R${l.r}</b> ${UI.esc(l.msg)}</div>`).join('') || '<div class="ph">Nothing yet.</div>'}</div></div>`;
 }
 
 UI.renderBoard = function () {
