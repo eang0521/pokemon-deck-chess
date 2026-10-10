@@ -3,7 +3,7 @@
    - when the site itself is served by the Node room server (localhost), rooms are on the same host
    - otherwise PAC_SERVER_URL below: set it to the deployed room server */
 (function () {
-  const PAC_SERVER_URL = 'wss://pac-rooms.eang0521.workers.dev';
+  const PAC_SERVER_URL = 'wss://pac-rooms.pac-rooms.workers.dev';
   let url = PAC_SERVER_URL;
   try {
     const q = new URLSearchParams(location.search).get('server');

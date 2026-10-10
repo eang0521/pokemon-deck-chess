@@ -26,5 +26,5 @@ ONLINE SERVER
   (serves the site and the rooms; open it in several tabs or on other devices on your network).
   Production (Cloudflare Workers + Durable Objects, free tier is enough):
     cd server && npx wrangler login && npm run deploy
-  then put the printed wss://pac-rooms.<your-subdomain>.workers.dev address in js/config.js
+  (deployed: wss://pac-rooms.pac-rooms.workers.dev). A new deploy elsewhere prints its address: put it in js/config.js
   (PAC_SERVER_URL) and redeploy the site. Any page also accepts ?server=wss://... to override it.
